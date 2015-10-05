@@ -4,7 +4,7 @@ import credit.Credit;
 import sajas.core.Agent;
 import tools.Tool;
 
-public class CarAgent extends Agent {
+public class CarAgent extends Worker {
 	
 	private static int VELOCITY = 3;
 	private static boolean ROAD = true; //true estrada, false ar

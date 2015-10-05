@@ -1,5 +1,5 @@
 package locals;
 
-public class Dump {
+public class Dump extends Local {
 
 }

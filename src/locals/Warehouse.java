@@ -1,5 +1,5 @@
 package locals;
 
-public class Warehouse {
+public class Warehouse extends Local {
 
 }

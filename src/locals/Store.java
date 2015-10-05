@@ -1,5 +1,5 @@
 package locals;
 
-public class Store {
+public class Store extends Local {
 
 }

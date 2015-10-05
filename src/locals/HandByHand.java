@@ -1,5 +1,5 @@
 package locals;
 
-public class HandByHand {
+public class HandByHand extends Local {
 
 }

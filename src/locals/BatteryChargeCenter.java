@@ -1,5 +1,5 @@
 package locals;
 
-public class BatteryChargeCenter {
+public class BatteryChargeCenter extends Local {
 
 }

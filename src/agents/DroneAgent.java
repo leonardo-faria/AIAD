@@ -4,7 +4,7 @@ import credit.Credit;
 import sajas.core.Agent;
 import tools.Tool;
 
-public class DroneAgent extends Agent {
+public class DroneAgent extends Worker {
 
 	private static int VELOCITY = 5;
 	private static boolean ROAD = false; //true estrada, false ar
