@@ -1,5 +1,6 @@
 package main;
 
+import agents.CarAgent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import sajas.core.Runtime;
@@ -25,7 +26,12 @@ public class Main extends Repast3Launcher {
 	
 	private void launchAgents() {
 		try {
-			
+			CarAgent car1 = new CarAgent();
+			CarAgent car2 = new CarAgent();
+			car1.setArguments(new String[]{"ping"});
+			car2.setArguments(new String[]{"pong"});
+			agentContainer.acceptNewAgent("Novo agente1", car1);
+			agentContainer.acceptNewAgent("Novo agente2", car2);
 		}
 		catch(Exception e) {
 			
