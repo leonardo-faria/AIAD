@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jade.jar"/>
 	<classpathentry kind="lib" path="lib/SAJaS.jar"/>
-	<classpathentry kind="lib" path="lib/repast.jar"/>
 	<classpathentry kind="lib" path="lib/colt.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Repast 3/Repast J/repast.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
