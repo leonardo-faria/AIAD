@@ -3,6 +3,7 @@ package main;
 import java.util.ArrayList;
 
 import agents.CarAgent;
+import agents.Wall;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import sajas.core.Runtime;
@@ -25,12 +26,16 @@ public class Main extends Repast3Launcher {
 	public static final boolean SEPARATE_CONTAINERS = false;
 	public static final int NUM_AGENTS = 2;
 
+	private int worldXSize = 100;
+	private int worldYSize = 100;
+
 	CarAgent car1;
 	CarAgent car2;
+	Wall wall;
 
 	DisplaySurface dsurf;
 	Object2DGrid space;
-	ArrayList agentList;
+	ArrayList<Object> agentList;
 
 	public static void main(String[] args) {
 		boolean runMode = !BATCH_MODE; // BATCH_MODE or !BATCH_MODE
@@ -41,8 +46,8 @@ public class Main extends Repast3Launcher {
 
 	private void launchAgents() {
 		try {
-			car1 = new CarAgent();
-			car2 = new CarAgent();
+			car1 = new CarAgent(0,0);
+			car2 = new CarAgent(1,1);
 			car1.setArguments(new String[] { "ping" });
 			car2.setArguments(new String[] { "pong" });
 			agentContainer.acceptNewAgent("Novo agente1", car1);
@@ -51,11 +56,6 @@ public class Main extends Repast3Launcher {
 		} catch (Exception e) {
 
 		}
-	}
-
-	@Override
-	public String[] getInitParam() {
-		return new String[0];
 	}
 
 	@Override
@@ -91,21 +91,44 @@ public class Main extends Repast3Launcher {
 
 	private void buildDisplay() {
 
-//		Object2DDisplay agentDisplay = new Object2DDisplay(space);
-//		agentDisplay.setObjectList(agentList);
-//		dsurf.addDisplayableProbeable(agentDisplay, "Agents");
-//		addSimEventListener(dsurf);
-//		dsurf.display();
+		Object2DDisplay agentDisplay = new Object2DDisplay(space);
+		agentDisplay.setObjectList(agentList);
+		
+		dsurf.addDisplayableProbeable(agentDisplay, "Agents");
+		addSimEventListener(dsurf);
+		dsurf.display();
 
 	}
 
 	private void buildModel() {
-//		agentList = new ArrayList();
-//		space = new Object2DGrid(20, 20);
-//		space.putObjectAt(1, 2, car1);
-//		agentList.add(car1);
-
+		agentList = new ArrayList<Object>();
+		space = new Object2DGrid(worldXSize, worldYSize);
+		
+		space.putObjectAt(car1.getX(), car1.getY(), car1);
+		agentList.add(car1);
+		space.putObjectAt(car2.getX(), car2.getY(), car2);
+		agentList.add(car2);
 
 	}
 
+	public String[] getInitParam() {
+		String[] params = { "worldXSize", "worldYSize" };
+		return params;
+	}
+
+	public int getWorldXSize() {
+		return worldXSize;
+	}
+
+	public void setWorldXSize(int size) {
+		worldXSize = size;
+	}
+
+	public int getWorldYSize() {
+		return worldYSize;
+	}
+
+	public void setWorldYSize(int size) {
+		worldYSize = size;
+	}
 }

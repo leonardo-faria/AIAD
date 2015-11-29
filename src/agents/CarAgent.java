@@ -12,6 +12,10 @@ import tools.Tool;
 
 public class CarAgent extends Worker {
 
+	public CarAgent(int x, int y) {
+		super(x, y);
+	}
+
 	private static int VELOCITY = 3;
 	private static boolean ROAD = true; // true estrada, false ar
 	private static int BATTERY_CAPACITY = 500;
