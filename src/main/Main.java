@@ -20,7 +20,7 @@ import uchicago.src.sim.space.Object2DTorus;
 
 public class Main extends Repast3Launcher {
 
-	private static final boolean BATCH_MODE = true;
+	private static final boolean BATCH_MODE = false;
 	private ContainerController mainContainer;
 	private ContainerController agentContainer;
 	public static final boolean SEPARATE_CONTAINERS = false;
@@ -38,16 +38,16 @@ public class Main extends Repast3Launcher {
 	ArrayList<Object> agentList;
 
 	public static void main(String[] args) {
-		boolean runMode = !BATCH_MODE; // BATCH_MODE or !BATCH_MODE
+		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
 		SimInit init = new SimInit();
 		init.setNumRuns(10); // works only in batch mode
-		init.loadModel(new Main(), null, runMode);
+		init.loadModel(new Main(), null, BATCH_MODE);
 	}
 
 	private void launchAgents() {
 		try {
-			car1 = new CarAgent(0,0);
-			car2 = new CarAgent(1,1);
+			car1 = new CarAgent(1, 1);
+			car2 = new CarAgent(2, 5);
 			car1.setArguments(new String[] { "ping" });
 			car2.setArguments(new String[] { "pong" });
 			agentContainer.acceptNewAgent("Novo agente1", car1);
@@ -81,19 +81,25 @@ public class Main extends Repast3Launcher {
 
 	@Override
 	public void begin() {
+		agentList = new ArrayList<Object>();
+		wall = new Wall("temp.txt");
+		agentList.add(wall);
+		setWorldYSize(wall.getHeight());
+		setWorldXSize(wall.getWidth());
 		super.begin();
-
-		dsurf = new DisplaySurface(this, "T&T");
-		registerDisplaySurface("T&T", dsurf);
-		buildModel();
-		buildDisplay();
+		if (!BATCH_MODE) {
+			dsurf = new DisplaySurface(this, "T&T");
+			registerDisplaySurface("T&T", dsurf);
+			buildModel();
+			buildDisplay();
+		}
 	}
 
 	private void buildDisplay() {
 
 		Object2DDisplay agentDisplay = new Object2DDisplay(space);
 		agentDisplay.setObjectList(agentList);
-		
+
 		dsurf.addDisplayableProbeable(agentDisplay, "Agents");
 		addSimEventListener(dsurf);
 		dsurf.display();
@@ -101,9 +107,7 @@ public class Main extends Repast3Launcher {
 	}
 
 	private void buildModel() {
-		agentList = new ArrayList<Object>();
 		space = new Object2DGrid(worldXSize, worldYSize);
-		
 		space.putObjectAt(car1.getX(), car1.getY(), car1);
 		agentList.add(car1);
 		space.putObjectAt(car2.getX(), car2.getY(), car2);

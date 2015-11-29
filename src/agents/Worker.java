@@ -19,7 +19,7 @@ public abstract class Worker extends Agent implements Drawable {
 
 	@Override
 	public void draw(SimGraphics g) {
-		g.setDrawingCoordinates(x * g.getCurWidth(), y * g.getCellHeightScale(), 0);
+		g.setDrawingCoordinates(x * g.getCurWidth(), y * g.getCurHeight(), 0);
 		g.drawFastRect(Color.green);
 	}
 
