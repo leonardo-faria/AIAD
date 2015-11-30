@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import agents.CarAgent;
 import agents.Wall;
+import agents.Worker;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import sajas.core.Runtime;
@@ -17,6 +18,7 @@ import uchicago.src.sim.gui.Object2DDisplay;
 import uchicago.src.sim.gui.Value2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
 import uchicago.src.sim.space.Object2DTorus;
+import utils.Coord;
 
 public class Main extends Repast3Launcher {
 
@@ -86,6 +88,7 @@ public class Main extends Repast3Launcher {
 		drawList.add(wall);
 		setWorldYSize(wall.getHeight());
 		setWorldXSize(wall.getWidth());
+		Worker.getRoute(new Coord(1, 4), new Coord(10, 4));
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");

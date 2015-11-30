@@ -9,16 +9,29 @@ import java.util.ArrayList;
 
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
+import utils.Coord;
 
 public class Wall implements Drawable {
-	ArrayList<ArrayList<Integer>> map;
+	public static ArrayList<ArrayList<Integer>> map;
 
-	
+	static <T> ArrayList<ArrayList<T>> transpose(ArrayList<ArrayList<T>> table) {
+		ArrayList<ArrayList<T>> ret = new ArrayList<ArrayList<T>>();
+		final int N = table.get(0).size();
+		for (int i = 0; i < N; i++) {
+			ArrayList<T> col = new ArrayList<T>();
+			for (ArrayList<T> row : table) {
+				col.add(row.get(i));
+			}
+			ret.add(col);
+		}
+		return ret;
+	}
+
 	public Wall(String fileName) {
 
 		String line = null;
-		map = new ArrayList<ArrayList<Integer>>();
-		
+		ArrayList<ArrayList<Integer>> temp = new ArrayList<ArrayList<Integer>>();
+
 		try {
 			FileReader fileReader = new FileReader(fileName);
 
@@ -29,9 +42,11 @@ public class Wall implements Drawable {
 				for (int i = 0; i < line.length(); i++) {
 					al.add((int) line.charAt(i) - (int) '0');
 				}
-				map.add(al);
+				temp.add(al);
 			}
 			bufferedReader.close();
+
+			map = transpose(temp);
 		} catch (FileNotFoundException ex) {
 			System.out.println("Unable to open file '" + fileName + "'");
 		} catch (IOException ex) {
@@ -44,20 +59,27 @@ public class Wall implements Drawable {
 	public void draw(SimGraphics g) {
 		for (int i = 0; i < map.size(); i++) {
 			for (int j = 0; j < map.get(i).size(); j++) {
-				if (map.get(i).get(j) == 1)
-					g.setDrawingCoordinates(j * g.getCurWidth(), i * g.getCurHeight(), 0);
-				g.drawFastRect(Color.red);
+				if (map.get(i).get(j) == 1) {
+					g.setDrawingCoordinates(i * g.getCurWidth(), j * g.getCurHeight(), 0);
+					g.drawFastRect(Color.red);
+				}
+				else if (map.get(i).get(j) == 2) {
+					g.setDrawingCoordinates(i * g.getCurWidth(), j * g.getCurHeight(), 0);
+					g.drawFastRect(Color.yellow);
+				}
+
 			}
 		}
 	}
 
-	public int getHeight(){
+	public int getHeight() {
 		return map.size();
 	}
-	public int getWidth(){
+
+	public int getWidth() {
 		return map.get(0).size();
 	}
-	
+
 	public int getX() {
 		return 0;
 	}
