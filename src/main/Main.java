@@ -35,7 +35,7 @@ public class Main extends Repast3Launcher {
 
 	DisplaySurface dsurf;
 	Object2DGrid space;
-	ArrayList<Object> agentList;
+	ArrayList<Object> drawList;
 
 	public static void main(String[] args) {
 		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
@@ -81,9 +81,9 @@ public class Main extends Repast3Launcher {
 
 	@Override
 	public void begin() {
-		agentList = new ArrayList<Object>();
+		drawList = new ArrayList<Object>();
 		wall = new Wall("temp.txt");
-		agentList.add(wall);
+		drawList.add(wall);
 		setWorldYSize(wall.getHeight());
 		setWorldXSize(wall.getWidth());
 		super.begin();
@@ -98,7 +98,7 @@ public class Main extends Repast3Launcher {
 	private void buildDisplay() {
 
 		Object2DDisplay agentDisplay = new Object2DDisplay(space);
-		agentDisplay.setObjectList(agentList);
+		agentDisplay.setObjectList(drawList);
 
 		dsurf.addDisplayableProbeable(agentDisplay, "Agents");
 		addSimEventListener(dsurf);
@@ -109,9 +109,9 @@ public class Main extends Repast3Launcher {
 	private void buildModel() {
 		space = new Object2DGrid(worldXSize, worldYSize);
 		space.putObjectAt(car1.getX(), car1.getY(), car1);
-		agentList.add(car1);
+		drawList.add(car1);
 		space.putObjectAt(car2.getX(), car2.getY(), car2);
-		agentList.add(car2);
+		drawList.add(car2);
 
 	}
 
