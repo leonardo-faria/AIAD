@@ -9,11 +9,14 @@ import sajas.core.Agent;
 import sajas.core.behaviours.SimpleBehaviour;
 import sajas.domain.DFService;
 import tools.Tool;
+import uchicago.src.sim.space.Object2DGrid;
+import utils.Coord;
 
 public class CarAgent extends Worker {
 
-	public CarAgent(int x, int y) {
-		super(x, y);
+	public CarAgent(Coord c, Object2DGrid space) {
+		super(c, space);
+		makeRoute(c, new Coord(40,40));
 	}
 
 	private static int VELOCITY = 3;
@@ -61,7 +64,6 @@ public class CarAgent extends Worker {
 
 	protected void setup() {
 		String tipo = "";
-		// obtém argumentos
 		Object[] args = getArguments();
 		if (args != null && args.length > 0) {
 			tipo = (String) args[0];
@@ -69,7 +71,6 @@ public class CarAgent extends Worker {
 			System.out.println("Não especificou o tipo");
 		}
 
-		// regista agente no DF
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
@@ -81,29 +82,7 @@ public class CarAgent extends Worker {
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
-		// cria behaviour
-		ola b = new ola(this);
-		addBehaviour(b);
-
-		// toma a iniciativa se for agente "pong"
-		if (tipo.equals("pong")) {
-			// pesquisa DF por agentes "ping"
-			DFAgentDescription template = new DFAgentDescription();
-			ServiceDescription sd1 = new ServiceDescription();
-			sd1.setType("Agente ping");
-			template.addServices(sd1);
-			try {
-				DFAgentDescription[] result = DFService.search(this, template);
-				// envia mensagem "pong" inicial a todos os agentes "ping"
-				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-				for (int i = 0; i < result.length; ++i)
-					msg.addReceiver(result[i].getName());
-				msg.setContent("pong");
-				send(msg);
-			} catch (FIPAException e) {
-				e.printStackTrace();
-			}
-		}
+		
 	}
 
 }

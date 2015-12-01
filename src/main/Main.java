@@ -38,18 +38,26 @@ public class Main extends Repast3Launcher {
 	DisplaySurface dsurf;
 	Object2DGrid space;
 	ArrayList<Object> drawList;
+	ArrayList<Worker> workerList;
+
+	int move_count = 50;
 
 	public static void main(String[] args) {
 		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
 		SimInit init = new SimInit();
 		init.setNumRuns(10); // works only in batch mode
 		init.loadModel(new Main(), null, BATCH_MODE);
+
 	}
 
 	private void launchAgents() {
 		try {
-			car1 = new CarAgent(1, 1);
-			car2 = new CarAgent(2, 5);
+			workerList = new ArrayList<>();
+			space = new Object2DGrid(worldXSize, worldYSize);
+			car1 = new CarAgent(new Coord(1, 1), space);
+			car2 = new CarAgent(new Coord(2, 5), space);
+			workerList.add(car1);
+			workerList.add(car2);
 			car1.setArguments(new String[] { "ping" });
 			car2.setArguments(new String[] { "pong" });
 			agentContainer.acceptNewAgent("Novo agente1", car1);
@@ -88,7 +96,6 @@ public class Main extends Repast3Launcher {
 		drawList.add(wall);
 		setWorldYSize(wall.getHeight());
 		setWorldXSize(wall.getWidth());
-		Worker.getRoute(new Coord(1, 4), new Coord(10, 4));
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");
@@ -106,11 +113,21 @@ public class Main extends Repast3Launcher {
 		dsurf.addDisplayableProbeable(agentDisplay, "Agents");
 		addSimEventListener(dsurf);
 		dsurf.display();
+		getSchedule().scheduleActionBeginning(1, this, "step");
 
 	}
 
+	public void step() {
+		dsurf.updateDisplay();
+		move_count--;
+		if (move_count == 0) {
+			for (int i = 0; i < workerList.size(); i++)
+				workerList.get(i).move();
+			move_count = 50;
+		}
+	}
+
 	private void buildModel() {
-		space = new Object2DGrid(worldXSize, worldYSize);
 		space.putObjectAt(car1.getX(), car1.getY(), car1);
 		drawList.add(car1);
 		space.putObjectAt(car2.getX(), car2.getY(), car2);

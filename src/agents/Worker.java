@@ -5,51 +5,77 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
+import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
+
+import main.Main;
 import sajas.core.Agent;
+import sajas.core.behaviours.SimpleBehaviour;
 import uchicago.src.sim.gui.DisplayConstants;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
+import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
 import utils.DefaultHashMap;
 
 public abstract class Worker extends Agent implements Drawable {
-	int x, y;
 
-	public Worker(int x, int y) {
-		this.x = x;
-		this.y = y;
+	Coord pos;
+	Object2DGrid space;
+	LinkedList<Move> moves;
+
+	public class Move {
+		Coord c;
+
+		public Move(Coord c) {
+			this.c = c;
+		}
+
+		public void run() {
+			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
+			Worker.this.pos.setX(c.getX());
+			Worker.this.pos.setY(c.getY());
+			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
+		}
+
+	}
+
+	public void move() {
+		if (!moves.isEmpty())
+			moves.remove().run();
+	}
+
+	public Worker(Coord c, Object2DGrid space) {
+		pos = c;
+		this.space = space;
+		moves = new LinkedList<Move>();
 	}
 
 	@Override
 	public void draw(SimGraphics g) {
-		g.setDrawingCoordinates(x * g.getCurWidth(), y * g.getCurHeight(), 0);
+		g.setDrawingCoordinates(pos.getX() * g.getCurWidth(), pos.getY() * g.getCurHeight(), 0);
 		g.drawFastRect(Color.green);
 	}
 
 	public int getX() {
-		return x;
+		return pos.getX();
 	}
 
 	public void setX(int x) {
-		this.x = x;
+		this.pos.setX(x);
 	}
 
 	public int getY() {
-		return y;
+		return pos.getY();
 	}
 
 	public void setY(int y) {
-		this.y = y;
+		this.pos.setY(y);
 	}
 
-	public static void main(String[] args) {
-		new Wall("temp.txt");
-		System.out.println(getRoute(new Coord(1, 4), new Coord(4, 10)));
-	}
-
-	public static ArrayList<Coord> getRoute(Coord start, Coord goal) {
+	public void makeRoute(Coord start, Coord goal) {
 
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
@@ -64,7 +90,12 @@ public abstract class Worker extends Agent implements Drawable {
 
 			Coord current = f_score.keyOfLowestValue(openSet);
 			if (current.equals(goal)) {
-				return make_path(cameFrom, goal);// TODO return
+				moves.addFirst(new Move(current));
+				while (cameFrom.containsKey(current)) {
+					current = cameFrom.get(current);
+					moves.addFirst(new Move(current));
+				}
+				return;
 			}
 
 			openSet.remove(current);
@@ -88,17 +119,7 @@ public abstract class Worker extends Agent implements Drawable {
 				f_score.put(neighbor.get(i), tentative_g_score + Coord.heuristic(neighbor.get(i), goal));
 			}
 		}
-		return null;
+		return;
 	}
 
-	public static ArrayList<Coord> make_path(HashMap<Coord, Coord> cameFrom, Coord current) {
-		ArrayList<Coord> total_path = new ArrayList<Coord>();
-		total_path.add(current);
-		while (cameFrom.containsKey(current)) {
-			current = cameFrom.get(current);
-			total_path.add(0, current);
-			Wall.map.get(current.getX()).set(current.getY(), 2);
-		}
-		return total_path;
-	}
 }
