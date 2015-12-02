@@ -91,22 +91,22 @@ public class Main extends Repast3Launcher {
 	}
 
 	@Override
-	public void begin() {
-		drawList = new ArrayList<Object>();
+	public void begin() { //TODO this needs urgent fix, super is in the middle of the function
 		wall = new Wall("temp.txt");
-		drawList.add(wall);
 		setWorldYSize(wall.getHeight());
 		setWorldXSize(wall.getWidth());
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");
 			registerDisplaySurface("T&T", dsurf);
-			buildModel();
 			buildDisplay();
+			buildModel();
 		}
 	}
 
 	private void buildDisplay() {
+		drawList = new ArrayList<Object>();
+		drawList.add(wall);
 
 		Object2DDisplay agentDisplay = new Object2DDisplay(space);
 		agentDisplay.setObjectList(drawList);
