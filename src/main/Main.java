@@ -51,6 +51,10 @@ public class Main extends Repast3Launcher {
 
 	private void launchAgents() {
 		try {
+
+			wall = new Wall("temp.txt");
+			setWorldYSize(wall.getHeight());
+			setWorldXSize(wall.getWidth());
 			workerList = new ArrayList<>();
 			space = new Object2DGrid(worldXSize, worldYSize);
 			car1 = new CarAgent(new Coord(1, 1), space);
@@ -92,9 +96,6 @@ public class Main extends Repast3Launcher {
 
 	@Override
 	public void begin() { //TODO this needs urgent fix, super is in the middle of the function
-		wall = new Wall("temp.txt");
-		setWorldYSize(wall.getHeight());
-		setWorldXSize(wall.getWidth());
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");
