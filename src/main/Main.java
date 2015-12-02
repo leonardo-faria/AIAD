@@ -40,7 +40,6 @@ public class Main extends Repast3Launcher {
 	ArrayList<Object> drawList;
 	ArrayList<Worker> workerList;
 
-	int move_count = 50;
 
 	public static void main(String[] args) {
 		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
@@ -63,6 +62,8 @@ public class Main extends Repast3Launcher {
 			agentContainer.acceptNewAgent("Novo agente1", car1);
 			agentContainer.acceptNewAgent("Novo agente2", car2);
 
+			scheduleAgent(car1);
+			scheduleAgent(car2);
 		} catch (Exception e) {
 
 		}
@@ -119,12 +120,6 @@ public class Main extends Repast3Launcher {
 
 	public void step() {
 		dsurf.updateDisplay();
-		move_count--;
-		if (move_count == 0) {
-			for (int i = 0; i < workerList.size(); i++)
-				workerList.get(i).move();
-			move_count = 50;
-		}
 	}
 
 	private void buildModel() {

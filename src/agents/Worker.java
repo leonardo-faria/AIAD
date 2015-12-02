@@ -26,25 +26,29 @@ public abstract class Worker extends Agent implements Drawable {
 	Object2DGrid space;
 	LinkedList<Move> moves;
 
-	public class Move {
+	public class Move extends SimpleBehaviour {
+		private static final long serialVersionUID = 1L;
 		Coord c;
+		boolean done = false;
 
 		public Move(Coord c) {
 			this.c = c;
 		}
 
-		public void run() {
+		@Override
+		public void action() {
 			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
 			Worker.this.pos.setX(c.getX());
 			Worker.this.pos.setY(c.getY());
 			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
+			done = true;
 		}
 
-	}
+		@Override
+		public boolean done() {
+			return done;
+		}
 
-	public void move() {
-		if (!moves.isEmpty())
-			moves.remove().run();
 	}
 
 	public Worker(Coord c, Object2DGrid space) {
@@ -94,6 +98,9 @@ public abstract class Worker extends Agent implements Drawable {
 				while (cameFrom.containsKey(current)) {
 					current = cameFrom.get(current);
 					moves.addFirst(new Move(current));
+				}
+				for (Move move : moves) {
+					addBehaviour(move);
 				}
 				return;
 			}
