@@ -34,43 +34,30 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public class Move extends SimpleBehaviour {
 		private static final long serialVersionUID = 1L;
-		Coord c;
-		boolean done = false;
+		LinkedList<Coord> cl;
+		int x;
 
-		public Move(Coord c) {
-			this.c = c;
+		public Move(LinkedList<Coord> cl) {
+			x = 0;
+			this.cl = cl;
 		}
 
 		@Override
 		public void action() {
-			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
-			Worker.this.pos.setX(c.getX());
-			Worker.this.pos.setY(c.getY());
-			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
-			done = true;
+			if (x++ == speed) {
+				Coord c = cl.getFirst();
+				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
+				Worker.this.pos.setX(c.getX());
+				Worker.this.pos.setY(c.getY());
+				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
+				x = 0;
+				cl.removeFirst();
+			}
 		}
 
 		@Override
 		public boolean done() {
-			return done;
-		}
-
-		@Override
-		public String toString() {
-			return c.toString();
-		}
-	}
-
-	public class NoMove extends SimpleBehaviour {
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void action() {
-		}
-
-		@Override
-		public boolean done() {
-			return true;
+			return cl.isEmpty();
 		}
 
 	}
@@ -102,11 +89,11 @@ public abstract class Worker extends Agent implements Drawable {
 		this.pos.setY(y);
 	}
 
-	public LinkedList<Move> makeRoute(Coord start, Coord goal) {
+	public LinkedList<Coord> makeRoute(Coord start, Coord goal) {
 		return makeRoute(start, goal, charge);
 	}
 
-	public LinkedList<Move> makeRoute(Coord start, Coord goal, int charge) {
+	public LinkedList<Coord> makeRoute(Coord start, Coord goal, int charge) {
 
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
@@ -122,19 +109,17 @@ public abstract class Worker extends Agent implements Drawable {
 			Coord current = f_score.keyOfLowestValue(openSet);
 			if (current.equals(goal)) {
 
-				LinkedList<Move> moves = new LinkedList<Move>();
-				moves.addFirst(new Move(current));
+				LinkedList<Coord> moves = new LinkedList<Coord>();
+				moves.addFirst(current);
 				while (cameFrom.containsKey(current)) {
 					current = cameFrom.get(current);
-					moves.addFirst(new Move(current));
+					moves.addFirst(current);
 				}
 				if (possibleRoute(moves, charge)) {
-					
 					return moves;
 				} else {
-					System.out.println("my c:" + charge);
 					moves = closestChargerPath(start);
-					moves.addAll(makeRoute(moves.getLast().c, goal, maxCharge));
+					moves.addAll(makeRoute(moves.getLast(), goal, maxCharge));
 					return moves;
 				}
 			}
@@ -164,7 +149,7 @@ public abstract class Worker extends Agent implements Drawable {
 		return null;
 	}
 
-	public LinkedList<Move> closestChargerPath(Coord start) {
+	public LinkedList<Coord> closestChargerPath(Coord start) {
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
@@ -178,11 +163,11 @@ public abstract class Worker extends Agent implements Drawable {
 			Coord current = f_score.keyOfLowestValue(openSet);
 			if (Wall.map.get(current.getX()).get(current.getY()).equals(2)) {
 
-				LinkedList<Move> moves = new LinkedList<Move>();
-				moves.addFirst(new Move(current));
+				LinkedList<Coord> moves = new LinkedList<Coord>();
+				moves.addFirst(current);
 				while (cameFrom.containsKey(current)) {
 					current = cameFrom.get(current);
-					moves.addFirst(new Move(current));
+					moves.addFirst(current);
 				}
 				return moves;
 			}
@@ -212,16 +197,11 @@ public abstract class Worker extends Agent implements Drawable {
 		return null;
 	}
 
-	public boolean possibleRoute(LinkedList<Move> r, int charge) {
-		return closestChargerPath(r.getLast().c).size() < charge - r.size();
+	public boolean possibleRoute(LinkedList<Coord> r, int charge) {
+		return closestChargerPath(r.getLast()).size() < charge - r.size();
 	}
 
-	public void scheduleMoves(LinkedList<Move> m){
-		for (Move move : m) {
-			addBehaviour(move);
-			for (int i = 0; i < speed; i++) {
-				addBehaviour(new NoMove());
-			}
-		}
+	public void scheduleMoves(LinkedList<Coord> m) {
+		addBehaviour(new Move(m));
 	}
 }
