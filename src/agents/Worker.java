@@ -28,6 +28,7 @@ public abstract class Worker extends Agent implements Drawable {
 	int load;
 	int maxCharge;
 	int maxload;
+
 	Coord pos;
 	Object2DGrid space;
 
@@ -42,7 +43,6 @@ public abstract class Worker extends Agent implements Drawable {
 
 		@Override
 		public void action() {
-
 			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
 			Worker.this.pos.setX(c.getX());
 			Worker.this.pos.setY(c.getY());
@@ -58,7 +58,21 @@ public abstract class Worker extends Agent implements Drawable {
 		@Override
 		public String toString() {
 			return c.toString();
-		} 
+		}
+	}
+
+	public class NoMove extends SimpleBehaviour {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void action() {
+		}
+
+		@Override
+		public boolean done() {
+			return true;
+		}
+
 	}
 
 	public Worker(Coord c, Object2DGrid space) {
@@ -89,6 +103,10 @@ public abstract class Worker extends Agent implements Drawable {
 	}
 
 	public LinkedList<Move> makeRoute(Coord start, Coord goal) {
+		return makeRoute(start, goal, charge);
+	}
+
+	public LinkedList<Move> makeRoute(Coord start, Coord goal, int charge) {
 
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
@@ -98,19 +116,38 @@ public abstract class Worker extends Agent implements Drawable {
 		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
 		g_score.put(start, 0);
 		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
-		f_score.put(start, g_score.get(start) + Coord.heuristic(start, goal) + 10);
+		f_score.put(start, g_score.get(start) + Coord.heuristic(start, goal));
 		while (!openSet.isEmpty()) {
 
 			Coord current = f_score.keyOfLowestValue(openSet);
 			if (current.equals(goal)) {
 
-				LinkedList<Move> moves = new  LinkedList<Move>();
+				LinkedList<Move> moves = new LinkedList<Move>();
 				moves.addFirst(new Move(current));
 				while (cameFrom.containsKey(current)) {
 					current = cameFrom.get(current);
 					moves.addFirst(new Move(current));
-				} 
-				return moves;
+				}
+				if (possibleRoute(moves, charge)) {
+					for (Move move : moves) {
+						addBehaviour(move);
+						for (int i = 0; i < speed; i++) {
+							addBehaviour(new NoMove());
+						}
+					}
+					return moves;
+				} else {
+					System.out.println("my c:" + charge);
+					moves = closestChargerPath(start);
+					moves.addAll(makeRoute(moves.getLast().c, goal, maxCharge));
+					for (Move move : moves) {
+						addBehaviour(move);
+						for (int i = 0; i < speed; i++) {
+							addBehaviour(new NoMove());
+						}
+					}
+					return moves;
+				}
 			}
 
 			openSet.remove(current);
@@ -124,7 +161,7 @@ public abstract class Worker extends Agent implements Drawable {
 				}
 
 				int tentative_g_score = g_score.get(current) + 1;
-				
+
 				if (!openSet.contains(neighbor.get(i)))
 					openSet.add(neighbor.get(i));
 				else if (tentative_g_score >= g_score.get(neighbor.get(i)))
@@ -138,8 +175,7 @@ public abstract class Worker extends Agent implements Drawable {
 		return null;
 	}
 
-	public LinkedList<Move> closestChargerPath(Coord start)
-	{
+	public LinkedList<Move> closestChargerPath(Coord start) {
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
@@ -153,14 +189,11 @@ public abstract class Worker extends Agent implements Drawable {
 			Coord current = f_score.keyOfLowestValue(openSet);
 			if (Wall.map.get(current.getX()).get(current.getY()).equals(2)) {
 
-				LinkedList<Move> moves = new  LinkedList<Move>();
+				LinkedList<Move> moves = new LinkedList<Move>();
 				moves.addFirst(new Move(current));
 				while (cameFrom.containsKey(current)) {
 					current = cameFrom.get(current);
 					moves.addFirst(new Move(current));
-				} 
-				for (Move move : moves) {
-					addBehaviour(move);
 				}
 				return moves;
 			}
@@ -176,7 +209,7 @@ public abstract class Worker extends Agent implements Drawable {
 				}
 
 				int tentative_g_score = g_score.get(current) + 1;
-				
+
 				if (!openSet.contains(neighbor.get(i)))
 					openSet.add(neighbor.get(i));
 				else if (tentative_g_score >= g_score.get(neighbor.get(i)))
@@ -188,5 +221,9 @@ public abstract class Worker extends Agent implements Drawable {
 			}
 		}
 		return null;
+	}
+
+	public boolean possibleRoute(LinkedList<Move> r, int charge) {
+		return closestChargerPath(r.getLast().c).size() < charge - r.size();
 	}
 }
