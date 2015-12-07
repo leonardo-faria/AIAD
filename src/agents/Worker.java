@@ -10,6 +10,8 @@ import java.util.Map;
 
 import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
 
+import actions.Charge;
+import javafx.util.Pair;
 import main.Main;
 import sajas.core.Agent;
 import sajas.core.behaviours.SimpleBehaviour;
@@ -45,6 +47,7 @@ public abstract class Worker extends Agent implements Drawable {
 		@Override
 		public void action() {
 			if (x++ == speed) {
+				((Worker) myAgent).charge--;
 				Coord c = cl.getFirst();
 				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
 				Worker.this.pos.setX(c.getX());
@@ -93,11 +96,11 @@ public abstract class Worker extends Agent implements Drawable {
 		this.pos.setY(y);
 	}
 
-	public LinkedList<Coord> makeRoute(Coord start, Coord goal) {
+	public Pair<LinkedList<Coord>, Coord> makeRoute(Coord start, Coord goal) {
 		return makeRoute(start, goal, charge);
 	}
 
-	public LinkedList<Coord> makeRoute(Coord start, Coord goal, int charge) {
+	public Pair<LinkedList<Coord>, Coord> makeRoute(Coord start, Coord goal, int charge) {
 
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
@@ -120,11 +123,12 @@ public abstract class Worker extends Agent implements Drawable {
 					moves.addFirst(current);
 				}
 				if (possibleRoute(moves, charge)) {
-					return moves;
+					return new Pair<LinkedList<Coord>, Coord>(moves, null);
 				} else {
 					moves = closestChargerPath(start);
-					moves.addAll(makeRoute(moves.getLast(), goal, maxCharge));
-					return moves;
+					addBehaviour(new Charge(moves.getLast()));
+					moves.addAll(makeRoute(moves.getLast(), goal, maxCharge).getKey());
+					return new Pair<LinkedList<Coord>, Coord>(moves, moves.getLast());
 				}
 			}
 
@@ -205,7 +209,13 @@ public abstract class Worker extends Agent implements Drawable {
 		return closestChargerPath(r.getLast()).size() < charge - r.size();
 	}
 
-	public void scheduleMoves(LinkedList<Coord> m) {
-		addBehaviour(new Move(m));
+	public void scheduleMoves(Pair<LinkedList<Coord>, Coord> m) {
+		addBehaviour(new Move(m.getKey()));
+		if (m.getValue() != null)
+			addBehaviour(new Charge(m.getValue()));
+	}
+
+	public void fullCharge() {
+		charge = maxCharge;
 	}
 }

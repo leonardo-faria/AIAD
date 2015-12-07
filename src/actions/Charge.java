@@ -9,21 +9,25 @@ public class Charge extends SimpleBehaviour {
 	private static final long serialVersionUID = 1L;
 
 	Coord location;
-
+	boolean done;
 	public Charge(Coord c) {
 		location = c;
+		done=false;
 	}
 
 	@Override
 	public void action() {
-		if (((Worker) myAgent).getX() == 1)
-			return;
+		if (((Worker) myAgent).getCoord().equals(location))
+		{
+			System.out.println("charged!");
+			((Worker) myAgent).fullCharge();
+			done=true;
+		}
 	}
 
 	@Override
 	public boolean done() {
-		// TODO Auto-generated method stub
-		return false;
+		return done;
 	}
 
 }
