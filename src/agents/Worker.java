@@ -2,8 +2,12 @@ package agents;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -25,11 +29,12 @@ import utils.DefaultHashMap;
 public abstract class Worker extends Agent implements Drawable {
 
 	int speed;
-	boolean fly;
+	boolean fly, isInAuction;
 	int charge;
 	int load;
 	int maxCharge;
 	int maxload;
+	int numOfResponses;
 	HashMap<jade.core.AID, Integer> proposeValues = new HashMap<>();
 
 	Coord pos;
@@ -45,25 +50,66 @@ public abstract class Worker extends Agent implements Drawable {
 
 		@Override
 		public void action() {
-			System.out.println("cenas");
 			ACLMessage msg = receive();
 			if(msg != null) {
 				switch (msg.getPerformative()) {
 				case ACLMessage.CFP:
 					System.out.println("Sou o " + this.getAgent().getName() + " e recebi uma msg com " + msg.getContent());
 					ACLMessage reply = msg.createReply();
-					reply.setPerformative(ACLMessage.PROPOSE);
-					reply.setContent("100");
+					if(this.getAgent().getName().equals("Agente3@Transportes")){
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setContent("100");
+					}
+					else
+						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					send(reply);
 					done = true;
 					break;
 				case ACLMessage.PROPOSE:
 					int val = Integer.parseInt(msg.getContent());
-					proposeValues.put( msg.getSender(), val);
+					proposeValues.put(msg.getSender(), val);
+					numOfResponses++;
 					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
-					done = true;
+					if(numOfResponses != Main.workerList.size() - 1){
+						block();
+					}
+					else{
+						int min = Collections.min(proposeValues.values());
+						ACLMessage acc = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+						ACLMessage rej = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+						for (Entry<jade.core.AID, Integer> entry : proposeValues.entrySet()) {
+							if(entry.getValue() == min && !acc.getAllReceiver().hasNext()){
+								acc.addReceiver(entry.getKey());
+							}
+							else{
+								rej.addReceiver(entry.getKey());
+							}
+						}
+						if(acc.getAllReceiver() != null)
+							send(acc);
+						if(rej.getAllReceiver() != null)
+							send(rej);
+
+						done = true;
+					}
 					break;
 
+				case ACLMessage.ACCEPT_PROPOSAL:
+					System.out.println("Bue fixe sou o escolhido, aka " + this.getAgent().getName());
+					done = true;
+					//fazer task
+					break;
+				case ACLMessage.REJECT_PROPOSAL:
+					if(isInAuction){
+						System.out.println("Agent " + msg.getSender().getLocalName() + " has rejected me :("); 
+						numOfResponses++;
+						done = true;
+					}
+					else {
+						System.out.println("kek cheiro mal, aka " + this.getAgent().getName());
+						done = true;
+					}
+					break;
 				default:
 					done = true;
 					break;
@@ -114,6 +160,7 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public Worker(Coord c, Object2DGrid space) {
 		pos = c;
+		isInAuction = false;
 		this.space = space;
 	}
 
@@ -153,9 +200,10 @@ public abstract class Worker extends Agent implements Drawable {
 
 		// toma a iniciativa se for agente "sender"
 		if (tipo.equals("sender")) {
-			// envia mensagem "pong" inicial a todos os agentes "ping"
+			isInAuction = true;
+			numOfResponses = 0;
 			ACLMessage msg = new ACLMessage(ACLMessage.CFP);
-			for (int i = 0; i < Main.workerList.size(); ++i){
+			for (int i = 0; i < Main.workerList.size(); i++){
 				if(!Main.workerList.get(i).getName().equals(this.getName()))
 					msg.addReceiver(Main.workerList.get(i).getAID());
 			}
