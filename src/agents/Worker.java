@@ -129,23 +129,12 @@ public abstract class Worker extends Agent implements Drawable {
 					moves.addFirst(new Move(current));
 				}
 				if (possibleRoute(moves, charge)) {
-					for (Move move : moves) {
-						addBehaviour(move);
-						for (int i = 0; i < speed; i++) {
-							addBehaviour(new NoMove());
-						}
-					}
+					
 					return moves;
 				} else {
 					System.out.println("my c:" + charge);
 					moves = closestChargerPath(start);
 					moves.addAll(makeRoute(moves.getLast().c, goal, maxCharge));
-					for (Move move : moves) {
-						addBehaviour(move);
-						for (int i = 0; i < speed; i++) {
-							addBehaviour(new NoMove());
-						}
-					}
 					return moves;
 				}
 			}
@@ -225,5 +214,14 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public boolean possibleRoute(LinkedList<Move> r, int charge) {
 		return closestChargerPath(r.getLast().c).size() < charge - r.size();
+	}
+
+	public void scheduleMoves(LinkedList<Move> m){
+		for (Move move : m) {
+			addBehaviour(move);
+			for (int i = 0; i < speed; i++) {
+				addBehaviour(new NoMove());
+			}
+		}
 	}
 }

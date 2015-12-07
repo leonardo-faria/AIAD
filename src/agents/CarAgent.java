@@ -16,10 +16,10 @@ public class CarAgent extends Worker {
 
 	public CarAgent(Coord c, Object2DGrid space) {
 		super(c, space);
-		charge= 1000;
+		charge= 10;
 		maxCharge= 1000;
-		speed=10;
-		makeRoute(c, new Coord(80, 80));
+		speed=30;
+		scheduleMoves(makeRoute(c, new Coord(80, 80)));
 	}
 
 	
