@@ -38,7 +38,7 @@ public class Main extends Repast3Launcher {
 	DisplaySurface dsurf;
 	Object2DGrid space;
 	ArrayList<Object> drawList;
-	ArrayList<Worker> workerList;
+	public static ArrayList<Worker> workerList;
 
 
 	public static void main(String[] args) {
@@ -61,10 +61,10 @@ public class Main extends Repast3Launcher {
 			car2 = new CarAgent(new Coord(2, 5), space);
 			workerList.add(car1);
 			workerList.add(car2);
-			car1.setArguments(new String[] { "ping" });
-			car2.setArguments(new String[] { "pong" });
-			agentContainer.acceptNewAgent("Novo agente1", car1);
-			agentContainer.acceptNewAgent("Novo agente2", car2);
+			car1.setArguments(new String[] { "receiver" });
+			car2.setArguments(new String[] { "sender" });
+			agentContainer.acceptNewAgent("Agente1", car1).start();
+			agentContainer.acceptNewAgent("Agente2", car2).start();
 
 			scheduleAgent(car1);
 			scheduleAgent(car2);

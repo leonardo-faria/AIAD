@@ -10,9 +10,18 @@ import java.util.Map;
 
 import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
 
+import agents.Worker.CheckMessage;
+import jade.core.behaviours.TickerBehaviour;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
 import main.Main;
+import sajas.core.AID;
 import sajas.core.Agent;
+import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.SimpleBehaviour;
+import sajas.domain.DFService;
 import uchicago.src.sim.gui.DisplayConstants;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
@@ -28,9 +37,47 @@ public abstract class Worker extends Agent implements Drawable {
 	int load;
 	int maxCharge;
 	int maxload;
+	HashMap<AID, Integer> proposeValues = new HashMap<>();
 
 	Coord pos;
 	Object2DGrid space;
+
+	public class CheckMessage extends sajas.core.behaviours.TickerBehaviour {
+		private static final long serialVersionUID = 1L;
+		public CheckMessage(Agent a, long tick) {
+			super(a,tick);
+		}
+		
+		@Override
+		protected void onTick() {
+			System.out.println("cenas");
+			ACLMessage msg = receive();
+			if(msg != null) {
+				switch (msg.getPerformative()) {
+				case ACLMessage.CFP:
+					System.out.println("Sou o " + this.getAgent().getName() + " e recebi uma msg com " + msg.getContent());
+					ACLMessage reply = msg.createReply();
+					reply.setPerformative(ACLMessage.PROPOSE);
+					reply.setContent("100");
+					send(reply);
+					break;
+				case ACLMessage.PROPOSE:
+					int val = Integer.parseInt(msg.getContent());
+					proposeValues.put((AID) msg.getSender(), val);
+					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
+					break;
+
+				default:
+					break;
+				}
+			}
+			else
+				System.out.println("nao recebi nada");
+			
+		}
+
+	}
+
 
 	public class Move extends SimpleBehaviour {
 		private static final long serialVersionUID = 1L;
@@ -65,6 +112,46 @@ public abstract class Worker extends Agent implements Drawable {
 	public Worker(Coord c, Object2DGrid space) {
 		pos = c;
 		this.space = space;
+	}
+
+	protected void setup() {
+		String tipo = "";
+		Object[] args = getArguments();
+		if (args != null && args.length > 0) {
+			tipo = (String) args[0];
+		} else {
+			System.out.println("Não especificou o tipo");
+		}
+
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setName(getName());
+		sd.setType("Agente " + tipo);
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd);
+		} catch (FIPAException e) {
+			e.printStackTrace();
+		}
+
+		// cria behaviour
+		CheckMessage b = new CheckMessage(this,1);
+		addBehaviour(b);
+		// toma a iniciativa se for agente "sender"
+		if (tipo.equals("sender")) {
+			// envia mensagem "pong" inicial a todos os agentes "ping"
+			ACLMessage msg = new ACLMessage(ACLMessage.CFP);
+			for (int i = 0; i < Main.workerList.size(); ++i){
+				if(!Main.workerList.get(i).getName().equals(this.getName()))
+					msg.addReceiver(Main.workerList.get(i).getAID());
+			}
+
+			msg.setContent("Mano, queres trabalhar?");
+			send(msg);
+			System.out.println("enviei ganda msg");
+		}
+
 	}
 
 	@Override

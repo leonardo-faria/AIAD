@@ -11,6 +11,7 @@ import sajas.domain.DFService;
 import tools.Tool;
 import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
+import main.Main;
 
 public class CarAgent extends Worker {
 
@@ -18,64 +19,7 @@ public class CarAgent extends Worker {
 		super(c, space);
 		charge= 10;
 		maxCharge= 1000;
-		speed=10;
+		speed=1;
 		scheduleMoves(makeRoute(c, new Coord(80, 80)));
 	}
-
-	
-
-	class ola extends SimpleBehaviour {
-
-		private int n = 0;
-
-		// construtor do behaviour
-		public ola(Agent a) {
-			super(a);
-		}
-
-		public void action() {
-			ACLMessage msg = blockingReceive();
-			if (msg.getPerformative() == ACLMessage.INFORM) {
-				System.out.println(++n + " " + getLocalName() + ": recebi " + msg.getContent());
-				// cria resposta
-				ACLMessage reply = msg.createReply();
-				// preenche conteúdo da mensagem
-				if (msg.getContent().equals("ping"))
-					reply.setContent("pong");
-				else
-					reply.setContent("ping");
-				// envia mensagem
-				send(reply);
-			}
-		}
-
-		// método done
-		public boolean done() {
-			return n == 10;
-		}
-	}
-
-	protected void setup() {
-		String tipo = "";
-		Object[] args = getArguments();
-		if (args != null && args.length > 0) {
-			tipo = (String) args[0];
-		} else {
-			System.out.println("Não especificou o tipo");
-		}
-
-		DFAgentDescription dfd = new DFAgentDescription();
-		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription();
-		sd.setName(getName());
-		sd.setType("Agente " + tipo);
-		dfd.addServices(sd);
-		try {
-			DFService.register(this, dfd);
-		} catch (FIPAException e) {
-			e.printStackTrace();
-		}
-		
-	}
-
 }
