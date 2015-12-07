@@ -16,7 +16,6 @@ public class CarAgent extends Worker {
 
 	public CarAgent(Coord c, Object2DGrid space) {
 		super(c, space);
-		makeRoute(c, new Coord(40,40));
 	}
 
 	private static int VELOCITY = 3;

@@ -95,7 +95,7 @@ public class Main extends Repast3Launcher {
 	}
 
 	@Override
-	public void begin() { //TODO this needs urgent fix, super is in the middle of the function
+	public void begin() { 
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");

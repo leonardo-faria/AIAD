@@ -37,6 +37,7 @@ public abstract class Worker extends Agent implements Drawable {
 
 		@Override
 		public void action() {
+			
 			space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
 			Worker.this.pos.setX(c.getX());
 			Worker.this.pos.setY(c.getY());
