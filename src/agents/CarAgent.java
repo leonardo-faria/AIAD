@@ -16,7 +16,6 @@ public class CarAgent extends Worker {
 
 	public CarAgent(Coord c, Object2DGrid space) {
 		super(c, space);
-		System.out.println(closestChargerPath(c));
 	}
 
 	

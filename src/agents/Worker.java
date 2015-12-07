@@ -55,6 +55,10 @@ public abstract class Worker extends Agent implements Drawable {
 			return done;
 		}
 
+		@Override
+		public String toString() {
+			return c.toString();
+		} 
 	}
 
 	public Worker(Coord c, Object2DGrid space) {
