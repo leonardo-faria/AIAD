@@ -10,14 +10,10 @@ import jade.core.ProfileImpl;
 import sajas.core.Runtime;
 import sajas.sim.repast3.Repast3Launcher;
 import sajas.wrapper.ContainerController;
-import uchicago.src.sim.engine.Schedule;
 import uchicago.src.sim.engine.SimInit;
-import uchicago.src.sim.gui.ColorMap;
 import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.Object2DDisplay;
-import uchicago.src.sim.gui.Value2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
-import uchicago.src.sim.space.Object2DTorus;
 import utils.Coord;
 
 public class Main extends Repast3Launcher {
@@ -42,7 +38,6 @@ public class Main extends Repast3Launcher {
 
 
 	public static void main(String[] args) {
-		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
 		SimInit init = new SimInit();
 		init.setNumRuns(10); // works only in batch mode
 		init.loadModel(new Main(), null, BATCH_MODE);

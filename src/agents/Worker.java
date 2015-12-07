@@ -1,17 +1,10 @@
 package agents;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
-
-import agents.Worker.CheckMessage;
-import jade.core.behaviours.TickerBehaviour;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -21,8 +14,8 @@ import sajas.core.AID;
 import sajas.core.Agent;
 import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.SimpleBehaviour;
+import sajas.core.behaviours.TickerBehaviour;
 import sajas.domain.DFService;
-import uchicago.src.sim.gui.DisplayConstants;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 import uchicago.src.sim.space.Object2DGrid;
@@ -37,19 +30,21 @@ public abstract class Worker extends Agent implements Drawable {
 	int load;
 	int maxCharge;
 	int maxload;
-	HashMap<AID, Integer> proposeValues = new HashMap<>();
+	HashMap<jade.core.AID, Integer> proposeValues = new HashMap<>();
 
 	Coord pos;
 	Object2DGrid space;
 
-	public class CheckMessage extends sajas.core.behaviours.TickerBehaviour {
+	public class CheckMessage extends Behaviour {
 		private static final long serialVersionUID = 1L;
-		public CheckMessage(Agent a, long tick) {
-			super(a,tick);
+		private boolean done = false;
+
+		public CheckMessage(Agent a) {
+			super(a);
 		}
-		
+
 		@Override
-		protected void onTick() {
+		public void action() {
 			System.out.println("cenas");
 			ACLMessage msg = receive();
 			if(msg != null) {
@@ -60,20 +55,28 @@ public abstract class Worker extends Agent implements Drawable {
 					reply.setPerformative(ACLMessage.PROPOSE);
 					reply.setContent("100");
 					send(reply);
+					done = true;
 					break;
 				case ACLMessage.PROPOSE:
 					int val = Integer.parseInt(msg.getContent());
-					proposeValues.put((AID) msg.getSender(), val);
+					proposeValues.put( msg.getSender(), val);
 					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
+					done = true;
 					break;
 
 				default:
+					done = true;
 					break;
 				}
 			}
 			else
-				System.out.println("nao recebi nada");
-			
+				done = true;
+
+		}
+
+		@Override
+		public boolean done() {
+			return done;
 		}
 
 	}
@@ -136,8 +139,18 @@ public abstract class Worker extends Agent implements Drawable {
 		}
 
 		// cria behaviour
-		CheckMessage b = new CheckMessage(this,1);
-		addBehaviour(b);
+
+		TickerBehaviour tb = new TickerBehaviour(this, 10) {
+			private static final long serialVersionUID = 1L;
+
+			protected void onTick() {
+				addBehaviour(new CheckMessage(this.getAgent()));
+			}
+			public void onStart(){
+			}
+		};
+		addBehaviour(tb);
+
 		// toma a iniciativa se for agente "sender"
 		if (tipo.equals("sender")) {
 			// envia mensagem "pong" inicial a todos os agentes "ping"
