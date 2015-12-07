@@ -73,6 +73,10 @@ public abstract class Worker extends Agent implements Drawable {
 		g.drawFastRect(Color.green);
 	}
 
+	public Coord getCoord() {
+		return pos;
+	}
+
 	public int getX() {
 		return pos.getX();
 	}
