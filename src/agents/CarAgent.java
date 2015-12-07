@@ -16,19 +16,10 @@ public class CarAgent extends Worker {
 
 	public CarAgent(Coord c, Object2DGrid space) {
 		super(c, space);
+		System.out.println(closestChargerPath(c));
 	}
 
-	private static int VELOCITY = 3;
-	private static boolean ROAD = true; // true estrada, false ar
-	private static int BATTERY_CAPACITY = 500;
-	private static int LOAD_CAPACITY = 550;
-	private static Tool f1;
-	private static Tool f2;
-
-	private Credit credit;
-	private int batteryLeft;
-	private int loadLeft;
-	private int position[];
+	
 
 	class ola extends SimpleBehaviour {
 

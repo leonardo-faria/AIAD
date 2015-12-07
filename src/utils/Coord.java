@@ -30,29 +30,29 @@ public class Coord implements Comparable<Coord> {
 	public ArrayList<Coord> getNeighbours(ArrayList<ArrayList<Integer>> map) {
 		ArrayList<Coord> neighbours = new ArrayList<Coord>();
 		if (this.x - 1 >= 0)
-			if (map.get(this.x - 1).get(this.y).equals(0))
+			if (!map.get(this.x - 1).get(this.y).equals(1))
 				neighbours.add(new Coord(x - 1, y));
 		if (this.x + 1 < map.size())
-			if (map.get(this.x + 1).get(this.y).equals(0))
+			if (!map.get(this.x + 1).get(this.y).equals(1))
 				neighbours.add(new Coord(x + 1, y));
 		if (this.y - 1 >= 0)
-			if (map.get(this.x).get(this.y - 1).equals(0))
+			if (!map.get(this.x).get(this.y - 1).equals(1))
 				neighbours.add(new Coord(x, y - 1));
 		if (this.y + 1 < map.get(0).size())
-			if (map.get(this.x).get(this.y + 1).equals(0))
+			if (!map.get(this.x).get(this.y + 1).equals(1))
 				neighbours.add(new Coord(x, y + 1));
 		if (DIAGONAL) {
 			if (this.x - 1 >= 0 && this.y - 1 >= 0)
-				if (map.get(this.x - 1).get(this.y - 1).equals(0))
+				if (!map.get(this.x - 1).get(this.y - 1).equals(1))
 					neighbours.add(new Coord(x - 1, y - 1));
 			if (this.x + 1 >= 0 && this.y - 1 >= 0)
-				if (map.get(this.x + 1).get(this.y - 1).equals(0))
+				if (!map.get(this.x + 1).get(this.y - 1).equals(1))
 					neighbours.add(new Coord(x + 1, y - 1));
 			if (this.x - 1 >= 0 && this.y + 1 >= 0)
-				if (map.get(this.x - 1).get(this.y + 1).equals(0))
+				if (!map.get(this.x - 1).get(this.y + 1).equals(1))
 					neighbours.add(new Coord(x - 1, y + 1));
 			if (this.x + 1 >= 0 && this.y + 1 >= 0)
-				if (map.get(this.x + 1).get(this.y + 1).equals(0))
+				if (!map.get(this.x + 1).get(this.y + 1).equals(1))
 					neighbours.add(new Coord(x + 1, y + 1));
 		}
 		return neighbours;
