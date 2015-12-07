@@ -19,7 +19,6 @@ public class Charge extends SimpleBehaviour {
 	public void action() {
 		if (((Worker) myAgent).getCoord().equals(location))
 		{
-			System.out.println("charged!");
 			((Worker) myAgent).fullCharge();
 			done=true;
 		}

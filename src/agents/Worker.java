@@ -13,6 +13,7 @@ import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
 import actions.Charge;
 import javafx.util.Pair;
 import main.Main;
+import product.Product;
 import sajas.core.Agent;
 import sajas.core.behaviours.SimpleBehaviour;
 import uchicago.src.sim.gui.DisplayConstants;
@@ -22,7 +23,7 @@ import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
 import utils.DefaultHashMap;
 
-public abstract class Worker extends Agent implements Drawable {
+public abstract class Worker extends Agent implements Drawable, Holder {
 
 	int speed;
 	boolean fly;
@@ -33,6 +34,9 @@ public abstract class Worker extends Agent implements Drawable {
 
 	Coord pos;
 	Object2DGrid space;
+
+	ArrayList<Product> stored;
+	ArrayList<Product> owned;
 
 	public class Move extends SimpleBehaviour {
 		private static final long serialVersionUID = 1L;
@@ -68,6 +72,8 @@ public abstract class Worker extends Agent implements Drawable {
 	public Worker(Coord c, Object2DGrid space) {
 		pos = c;
 		this.space = space;
+		stored = new ArrayList<>();
+		owned = new ArrayList<>();
 	}
 
 	@Override
@@ -217,5 +223,13 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public void fullCharge() {
 		charge = maxCharge;
+	}
+
+	public void pickup(Product p) {
+		stored.add(p);
+	}
+	
+	public void drop(Product p){
+		stored.remove(p);
 	}
 }
