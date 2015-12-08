@@ -191,7 +191,7 @@ public abstract class Worker extends Agent implements Drawable {
 					 if (reply.getPerformative() == ACLMessage.PROPOSE) {
 						 // This is an offer
 						 int price = Integer.parseInt(reply.getContent());
-						 System.out.println("O agente " + myAgent.getName() + "ganhou com o preço " + price);
+						 System.out.println("O agente " + reply.getSender().getName() + "ganhou com o preço " + price);
 						 if (winnerWorker == null || price < bestPrice) {
 							 // This is the best offer at present
 							 bestPrice = price;
