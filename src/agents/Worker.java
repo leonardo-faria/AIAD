@@ -1,20 +1,16 @@
 package agents;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import main.Main;
-import sajas.core.AID;
 import sajas.core.Agent;
 import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.SimpleBehaviour;
@@ -34,99 +30,217 @@ public abstract class Worker extends Agent implements Drawable {
 	int load;
 	int maxCharge;
 	int maxload;
-	int numOfResponses;
-	HashMap<jade.core.AID, Integer> proposeValues = new HashMap<>();
+	// HashMap<jade.core.AID, Integer> proposeValues = new HashMap<>();
 
 	Coord pos;
 	Object2DGrid space;
 
-	public class CheckMessage extends Behaviour {
+	public class RespondToTask extends Behaviour {
+
 		private static final long serialVersionUID = 1L;
-		private boolean done = false;
-
-		public CheckMessage(Agent a) {
-			super(a);
+		boolean done;
+		
+		public RespondToTask() {
+			done = false;
 		}
-
 		@Override
 		public void action() {
 			ACLMessage msg = receive();
 			if(msg != null) {
 				switch (msg.getPerformative()) {
 				case ACLMessage.CFP:
-					System.out.println("Sou o " + this.getAgent().getName() + " e recebi uma msg com " + msg.getContent());
+					System.out.println("Sou o " + myAgent.getName() + " e recebi uma msg com " + msg.getContent());
 					ACLMessage reply = msg.createReply();
 					if(this.getAgent().getName().equals("Agente3@Transportes")){
 						reply.setPerformative(ACLMessage.PROPOSE);
 						reply.setContent("100");
 					}
-					else
-						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					else {
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setContent("200");
+					}
 					send(reply);
 					done = true;
 					break;
-				case ACLMessage.PROPOSE:
-					int val = Integer.parseInt(msg.getContent());
-					proposeValues.put(msg.getSender(), val);
-					numOfResponses++;
-					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
-					if(numOfResponses != Main.workerList.size() - 1){
-						block();
-					}
-					else{
-						int min = Collections.min(proposeValues.values());
-						ACLMessage acc = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-						ACLMessage rej = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-						for (Entry<jade.core.AID, Integer> entry : proposeValues.entrySet()) {
-							if(entry.getValue() == min && !acc.getAllReceiver().hasNext()){
-								acc.addReceiver(entry.getKey());
-							}
-							else{
-								rej.addReceiver(entry.getKey());
-							}
-						}
-						if(acc.getAllReceiver() != null)
-							send(acc);
-						if(rej.getAllReceiver() != null)
-							send(rej);
-
-						done = true;
-					}
-					break;
-
 				case ACLMessage.ACCEPT_PROPOSAL:
 					System.out.println("Bue fixe sou o escolhido, aka " + this.getAgent().getName());
 					done = true;
 					//fazer task
 					break;
-				case ACLMessage.REJECT_PROPOSAL:
-					if(isInAuction){
-						System.out.println("Agent " + msg.getSender().getLocalName() + " has rejected me :("); 
-						numOfResponses++;
-						done = true;
-					}
-					else {
-						System.out.println("kek cheiro mal, aka " + this.getAgent().getName());
-						done = true;
-					}
-					break;
-				default:
-					done = true;
-					break;
 				}
 			}
-			else
-				done = true;
-
+			
 		}
 
 		@Override
 		public boolean done() {
 			return done;
 		}
+		
+	}
+	
+	public class RequestTask extends Behaviour {
+		private static final long serialVersionUID = 1L;
+		private int numOfResponses = 0;
+		private int bestPrice;
+		private jade.core.AID winnerWorker;
+		private int step;
+		private String tipo;
+
+		public RequestTask() {
+			Object[] args = getArguments();
+			this.tipo = (String) args[0];
+			step = 0;
+		}
+
+		@Override
+		public void action() {
+			
+//			ACLMessage msg = receive();
+//			if(msg != null) {
+//				switch (msg.getPerformative()) {
+//				case ACLMessage.CFP:
+//					System.out.println("Sou o " + this.getAgent().getName() + " e recebi uma msg com " + msg.getContent());
+//					ACLMessage reply = msg.createReply();
+//					if(this.getAgent().getName().equals("Agente3@Transportes")){
+//						reply.setPerformative(ACLMessage.PROPOSE);
+//						reply.setContent("100");
+//					}
+//					else
+//						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+//					send(reply);
+//					done = true;
+//					break;
+//				case ACLMessage.PROPOSE:
+//					int val = Integer.parseInt(msg.getContent());
+//					proposeValues.put(msg.getSender(), val);
+//					numOfResponses++;
+//					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
+//					if(numOfResponses != Main.workerList.size() - 1){
+//						block();
+//					}
+//					else{
+//						int min = Collections.min(proposeValues.values());
+//						ACLMessage acc = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+//						ACLMessage rej = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+//						for (Entry<jade.core.AID, Integer> entry : proposeValues.entrySet()) {
+//							if(entry.getValue() == min && !acc.getAllReceiver().hasNext()){
+//								acc.addReceiver(entry.getKey());
+//							}
+//							else{
+//								rej.addReceiver(entry.getKey());
+//							}
+//						}
+//						if(acc.getAllReceiver() != null)
+//							send(acc);
+//						if(rej.getAllReceiver() != null)
+//							send(rej);
+//
+//						done = true;
+//					}
+//					break;
+//
+//				case ACLMessage.ACCEPT_PROPOSAL:
+//					System.out.println("Bue fixe sou o escolhido, aka " + this.getAgent().getName());
+//					done = true;
+//					//fazer task
+//					break;
+//				case ACLMessage.REJECT_PROPOSAL:
+//					if(isInAuction){
+//						System.out.println("Agent " + msg.getSender().getLocalName() + " has rejected me :("); 
+//						numOfResponses++;
+//						done = true;
+//					}
+//					else {
+//						System.out.println("kek cheiro mal, aka " + this.getAgent().getName());
+//						done = true;
+//					}
+//					break;
+//				default:
+//					done = true;
+//					break;
+//				}
+//			}
+//			else
+//				done = true;
+//			
+			
+			switch (step) {
+			 case 0:
+			 // Send the cfp to all workers
+				// toma a iniciativa se for agente "sender"
+					if (tipo.equals("sender")) {
+						System.out.println("is sender");
+						isInAuction = true;
+						//numOfResponses = 0;
+						ACLMessage msg = new ACLMessage(ACLMessage.CFP);
+						for (int i = 0; i < Main.workerList.size(); i++){
+							if(Main.workerList.get(i).getAID() != myAgent.getAID())
+								msg.addReceiver(Main.workerList.get(i).getAID());
+						}
+						msg.setContent("Mano, queres trabalhar?");
+						send(msg);
+						step = 1;
+					}
+			 break;
+			 case 1:
+				 
+				 ACLMessage reply = myAgent.receive();
+				 if (reply != null) {
+				 // Reply received
+					 if (reply.getPerformative() == ACLMessage.PROPOSE) {
+						 // This is an offer
+						 int price = Integer.parseInt(reply.getContent());
+						 System.out.println("O agente " + myAgent.getName() + "ganhou com o preço " + price);
+						 if (winnerWorker == null || price < bestPrice) {
+							 // This is the best offer at present
+							 bestPrice = price;
+							 winnerWorker = reply.getSender();
+						 }
+					 }
+					 numOfResponses++;
+					 if (numOfResponses >= Main.workerList.size()) {
+						 //We received all replies
+						 step = 2;
+					 }
+				 }
+				 else {
+					 block();
+				 }
+				 break;
+			 case 2:
+				 // Send the confirmation to the worker that won the bid
+				 ACLMessage confirmation = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+				 confirmation.addReceiver(winnerWorker);
+				 confirmation.setContent("Ganhaste mano");
+				 myAgent.send(confirmation);
+				 step = 3;
+				 break;
+			 case 3:
+				 // Receive the confirmation when the task is done
+				 reply = myAgent.receive();
+				 if (reply != null) {
+					 // Confirmation received
+					 if (reply.getPerformative() == ACLMessage.INFORM) {
+						 // Task done
+						 System.out.println("Task done!");
+						 myAgent.doDelete();
+					 }
+					 step = 4;
+				 	}
+				 	else {
+				 		block();
+				 	}
+				 break;
+			} 
+		}
+		
+		@Override
+		public boolean done() {
+			return ((step == 2 && winnerWorker == null) || step == 4);
+		}
 
 	}
-
 
 	public class Move extends SimpleBehaviour {
 		private static final long serialVersionUID = 1L;
@@ -142,10 +256,12 @@ public abstract class Worker extends Agent implements Drawable {
 		public void action() {
 			if (x++ == speed) {
 				Coord c = cl.getFirst();
-				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
+				space.putObjectAt(Worker.this.pos.getX(),
+						Worker.this.pos.getY(), null);
 				Worker.this.pos.setX(c.getX());
 				Worker.this.pos.setY(c.getY());
-				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
+				space.putObjectAt(Worker.this.pos.getX(),
+						Worker.this.pos.getY(), Worker.this);
 				x = 0;
 				cl.removeFirst();
 			}
@@ -187,37 +303,25 @@ public abstract class Worker extends Agent implements Drawable {
 
 		// cria behaviour
 
-		TickerBehaviour tb = new TickerBehaviour(this, 10) {
+		TickerBehaviour tb = new TickerBehaviour(this, 100) {
 			private static final long serialVersionUID = 1L;
 
 			protected void onTick() {
-				addBehaviour(new CheckMessage(this.getAgent()));
+				addBehaviour(new RequestTask());
+				addBehaviour(new RespondToTask());
 			}
-			public void onStart(){
+
+			public void onStart() {
 			}
 		};
 		addBehaviour(tb);
-
-		// toma a iniciativa se for agente "sender"
-		if (tipo.equals("sender")) {
-			isInAuction = true;
-			numOfResponses = 0;
-			ACLMessage msg = new ACLMessage(ACLMessage.CFP);
-			for (int i = 0; i < Main.workerList.size(); i++){
-				if(!Main.workerList.get(i).getName().equals(this.getName()))
-					msg.addReceiver(Main.workerList.get(i).getAID());
-			}
-
-			msg.setContent("Mano, queres trabalhar?");
-			send(msg);
-			System.out.println("enviei ganda msg");
-		}
 
 	}
 
 	@Override
 	public void draw(SimGraphics g) {
-		g.setDrawingCoordinates(pos.getX() * g.getCurWidth(), pos.getY() * g.getCurHeight(), 0);
+		g.setDrawingCoordinates(pos.getX() * g.getCurWidth(),
+				pos.getY() * g.getCurHeight(), 0);
 		g.drawFastRect(Color.green);
 	}
 
@@ -248,9 +352,11 @@ public abstract class Worker extends Agent implements Drawable {
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
 		HashMap<Coord, Coord> cameFrom = new HashMap<Coord, Coord>();
 
-		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		g_score.put(start, 0);
-		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		f_score.put(start, g_score.get(start) + Coord.heuristic(start, goal));
 		while (!openSet.isEmpty()) {
 
@@ -291,7 +397,10 @@ public abstract class Worker extends Agent implements Drawable {
 
 				cameFrom.put(neighbor.get(i), current);
 				g_score.put(neighbor.get(i), tentative_g_score);
-				f_score.put(neighbor.get(i), tentative_g_score + Coord.heuristic(neighbor.get(i), goal));
+				f_score.put(
+						neighbor.get(i),
+						tentative_g_score
+								+ Coord.heuristic(neighbor.get(i), goal));
 			}
 		}
 		return null;
@@ -303,9 +412,11 @@ public abstract class Worker extends Agent implements Drawable {
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
 		HashMap<Coord, Coord> cameFrom = new HashMap<Coord, Coord>();
 
-		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		g_score.put(start, 0);
-		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		f_score.put(start, g_score.get(start) + 10);
 		while (!openSet.isEmpty()) {
 			Coord current = f_score.keyOfLowestValue(openSet);
