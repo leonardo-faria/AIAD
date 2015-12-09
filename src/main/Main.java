@@ -1,24 +1,21 @@
 package main;
 
-import java.util.ArrayList;
-
-import agents.CarAgent;
-import agents.Wall;
-import agents.Worker;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+
+import java.util.ArrayList;
+
 import sajas.core.Runtime;
 import sajas.sim.repast3.Repast3Launcher;
 import sajas.wrapper.ContainerController;
-import uchicago.src.sim.engine.Schedule;
 import uchicago.src.sim.engine.SimInit;
-import uchicago.src.sim.gui.ColorMap;
 import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.Object2DDisplay;
-import uchicago.src.sim.gui.Value2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
-import uchicago.src.sim.space.Object2DTorus;
 import utils.Coord;
+import agents.CarAgent;
+import agents.Wall;
+import agents.Worker;
 
 public class Main extends Repast3Launcher {
 
@@ -26,13 +23,12 @@ public class Main extends Repast3Launcher {
 	private ContainerController mainContainer;
 	private ContainerController agentContainer;
 	public static final boolean SEPARATE_CONTAINERS = false;
-	public static final int NUM_AGENTS = 2;
+	public static final int NUM_AGENTS = 3;
 
 	private int worldXSize = 100;
 	private int worldYSize = 100;
 
-	CarAgent car1;
-	CarAgent car2;
+	CarAgent car1,car2,car3;
 	Wall wall;
 
 	DisplaySurface dsurf;
@@ -42,7 +38,6 @@ public class Main extends Repast3Launcher {
 
 
 	public static void main(String[] args) {
-		boolean runMode = BATCH_MODE; // BATCH_MODE or !BATCH_MODE
 		SimInit init = new SimInit();
 		init.setNumRuns(10); // works only in batch mode
 		init.loadModel(new Main(), null, BATCH_MODE);
@@ -59,15 +54,20 @@ public class Main extends Repast3Launcher {
 			space = new Object2DGrid(worldXSize, worldYSize);
 			car1 = new CarAgent(new Coord(1, 1), space);
 			car2 = new CarAgent(new Coord(2, 5), space);
+			car3 = new CarAgent(new Coord(4, 5), space);
 			workerList.add(car1);
 			workerList.add(car2);
-			car1.setArguments(new String[] { "ping" });
-			car2.setArguments(new String[] { "pong" });
-			agentContainer.acceptNewAgent("Novo agente1", car1);
-			agentContainer.acceptNewAgent("Novo agente2", car2);
+			workerList.add(car3);
+			car1.setArguments(new String[] { "receiver" });
+			car2.setArguments(new String[] { "sender" });
+			car3.setArguments(new String[] { "receiver" });
+			agentContainer.acceptNewAgent("Agente1", car1).start();
+			agentContainer.acceptNewAgent("Agente3", car3).start();
+			agentContainer.acceptNewAgent("Agente2", car2).start();
 
 			scheduleAgent(car1);
 			scheduleAgent(car2);
+			scheduleAgent(car3);
 		} catch (Exception e) {
 
 		}
@@ -124,11 +124,10 @@ public class Main extends Repast3Launcher {
 	}
 
 	private void buildModel() {
-		space.putObjectAt(car1.getX(), car1.getY(), car1);
-		drawList.add(car1);
-		space.putObjectAt(car2.getX(), car2.getY(), car2);
-		drawList.add(car2);
-
+		for(int i = 0; i < workerList.size(); i++){
+			space.putObjectAt(workerList.get(i).getX(), workerList.get(i).getY(), workerList.get(i));
+			drawList.add(workerList.get(i));
+		}
 	}
 
 	public String[] getInitParam() {

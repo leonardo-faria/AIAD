@@ -1,22 +1,24 @@
 package agents;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
-
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
 
 import actions.Charge;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import javafx.util.Pair;
-import main.Main;
 import product.Product;
+import sajas.core.AID;
 import sajas.core.Agent;
+import sajas.core.behaviours.Behaviour;
+import sajas.core.behaviours.CyclicBehaviour;
 import sajas.core.behaviours.SimpleBehaviour;
-import uchicago.src.sim.gui.DisplayConstants;
+import sajas.domain.DFService;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 import uchicago.src.sim.space.Object2DGrid;
@@ -31,9 +33,183 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	int load;
 	int maxCharge;
 	int maxload;
+	private jade.core.AID[] agents;
 
 	Coord pos;
 	Object2DGrid space;
+
+	public class RespondToTask extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate
+					.MatchPerformative(ACLMessage.CFP);
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				System.out.println("Sou o " + myAgent.getName()
+				+ " e recebi uma msg com " + msg.getContent());
+				ACLMessage reply = msg.createReply();
+				if (myAgent.getName().equals("Agente3@Transportes")) {
+					reply.setContent("200");
+					reply.setPerformative(ACLMessage.PROPOSE);
+					System.out.println("Sou o " + myAgent.getName()
+					+ " e enviei uma proposta de " + reply.getContent());
+					addBehaviour(new TaskConfirmation());
+					
+				} else {
+					reply.setContent("100");
+					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					System.out.println("Sou o " + myAgent.getName()
+					+ " e rejeitei a proposta");
+				}
+				send(reply);
+			} else {
+				block();
+			}
+
+		}
+
+	}
+
+	public class TaskConfirmation extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+		private boolean done = false;
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate
+					.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				System.out.println("Fui aceite sou especial - "
+						+ myAgent.getName());
+				done = true;
+			} else {
+				block();
+			}
+		}
+
+		@Override
+		public boolean done() {
+			return done;
+		}
+
+	}
+
+	public class RequestTask extends Behaviour {
+		private static final long serialVersionUID = 1L;
+		private int numOfResponses;
+		private int bestPrice;
+		private jade.core.AID winnerWorker;
+		private int step;
+		private MessageTemplate mt;
+
+		public RequestTask() {
+			bestPrice = Integer.MAX_VALUE;
+			step = 0;
+			numOfResponses = 0;
+			updateAgents();
+		}
+
+		@Override
+		public void action() {
+			switch (step) {
+			case 0:
+				// Send the cfp to all workers
+				System.out.println("Step 0 - Sending messages to agents");
+				ACLMessage msg = new ACLMessage(ACLMessage.CFP);
+				for (int i = 0; i < agents.length; i++) {
+					if (agents[i] != myAgent.getAID())
+						msg.addReceiver(agents[i]);
+				}
+				msg.setContent("Mano, queres trabalhar?");
+				msg.setConversationId("task-request");
+				msg.setReplyWith("msg" + System.currentTimeMillis());
+				send(msg);
+				mt = MessageTemplate
+						.and(MessageTemplate
+								.MatchConversationId("task-request"),
+								MessageTemplate.MatchInReplyTo(msg
+										.getReplyWith()));
+				step = 1;
+				break;
+			case 1:
+
+				ACLMessage reply = myAgent.receive(mt);
+				if (reply != null) {
+					// Reply received
+					System.out.println("Step1 - Reply received");
+					if (reply.getPerformative() == ACLMessage.PROPOSE) {
+						// This is an offer
+						int price = Integer.parseInt(reply.getContent());
+						System.out
+						.println("Recebi uma mensagem com a proposta de "
+								+ price);
+						if (price < bestPrice) {
+							// This is the best offer at present
+							bestPrice = price;
+							winnerWorker = reply.getSender();
+						}
+					}
+					numOfResponses++;
+					if (numOfResponses >= agents.length - 1) {
+						// We received all replies
+						step = 2;
+						System.out.println("O agente "
+								+ winnerWorker.getName()
+								+ " ganhou com o preço " + bestPrice);
+					}
+				} else {
+					block();
+				}
+				break;
+			case 2:
+				// Send the confirmation to the worker that won the bid
+				System.out.println("Step2 - Sending confirmation\n");
+				ACLMessage confirmation = new ACLMessage(
+						ACLMessage.ACCEPT_PROPOSAL);
+				confirmation.addReceiver(winnerWorker);
+				confirmation.setContent("Ganhaste mano");
+				confirmation.setConversationId("task-request");
+				confirmation.setReplyWith("confirmation"
+						+ System.currentTimeMillis());
+				send(confirmation);
+				System.out.println(myAgent.getName() + " mandei a confirmação");
+				mt = MessageTemplate.and(MessageTemplate
+						.MatchConversationId("task-request"), MessageTemplate
+						.MatchInReplyTo(confirmation.getReplyWith()));
+				step = 3;
+				break;
+			case 3:
+				System.out.println("Step 3 - Waiting task complete status");
+				// Receive the confirmation when the task is done
+				reply = myAgent.receive(mt);
+				if (reply != null) {
+					// Confirmation received
+					if (reply.getPerformative() == ACLMessage.INFORM) {
+						// Task done
+						System.out.println("Task done!");
+						myAgent.doDelete();
+					}
+					step = 4;
+				} else {
+					block();
+				}
+				break;
+			default:
+				break;
+			}
+		}
+
+		@Override
+		public boolean done() {
+			return ((step == 2 && winnerWorker == null) || step == 4);
+		}
+
+	}
 
 	ArrayList<Product> stored;
 	ArrayList<Product> owned;
@@ -53,10 +229,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			if (x++ == speed) {
 				((Worker) myAgent).charge--;
 				Coord c = cl.getFirst();
-				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
+				space.putObjectAt(Worker.this.pos.getX(),
+						Worker.this.pos.getY(), null);
 				Worker.this.pos.setX(c.getX());
 				Worker.this.pos.setY(c.getY());
-				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), Worker.this);
+				space.putObjectAt(Worker.this.pos.getX(),
+						Worker.this.pos.getY(), Worker.this);
 				x = 0;
 				cl.removeFirst();
 			}
@@ -76,9 +254,56 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		owned = new ArrayList<>();
 	}
 
+	protected void setup() {
+		String tipo = "";
+		Object[] args = getArguments();
+		if (args != null && args.length > 0) {
+			tipo = (String) args[0];
+		} else {
+			System.out.println("Não especificou o tipo");
+		}
+
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setName(getName());
+		sd.setType("Agente " + tipo);
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd);
+			updateAgents();
+		} catch (FIPAException e) {
+			e.printStackTrace();
+		}
+
+		// cria behaviours
+
+		if(getLocalName().equals("Agente2"))
+			addBehaviour(new RequestTask());
+
+		addBehaviour(new RespondToTask());
+	}
+
+	private void updateAgents() {
+		// Update the list of seller agents
+		DFAgentDescription dfd = new DFAgentDescription();
+		ServiceDescription sd = new ServiceDescription();
+		dfd.addServices(sd);
+		try {
+			DFAgentDescription[] result = DFService.search(this, dfd);
+			agents = new AID[result.length];
+			for (int i = 0; i < result.length; ++i) {
+				agents[i] = result[i].getName();
+			}
+		} catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
+	}
+
 	@Override
 	public void draw(SimGraphics g) {
-		g.setDrawingCoordinates(pos.getX() * g.getCurWidth(), pos.getY() * g.getCurHeight(), 0);
+		g.setDrawingCoordinates(pos.getX() * g.getCurWidth(),
+				pos.getY() * g.getCurHeight(), 0);
 		g.drawFastRect(Color.green);
 	}
 
@@ -113,9 +338,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
 		HashMap<Coord, Coord> cameFrom = new HashMap<Coord, Coord>();
 
-		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		g_score.put(start, 0);
-		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		f_score.put(start, g_score.get(start) + Coord.heuristic(start, goal));
 		while (!openSet.isEmpty()) {
 
@@ -157,7 +384,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 				cameFrom.put(neighbor.get(i), current);
 				g_score.put(neighbor.get(i), tentative_g_score);
-				f_score.put(neighbor.get(i), tentative_g_score + Coord.heuristic(neighbor.get(i), goal));
+				f_score.put(
+						neighbor.get(i),
+						tentative_g_score
+						+ Coord.heuristic(neighbor.get(i), goal));
 			}
 		}
 		return null;
@@ -169,9 +399,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		ArrayList<Coord> closedSet = new ArrayList<Coord>();
 		HashMap<Coord, Coord> cameFrom = new HashMap<Coord, Coord>();
 
-		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> g_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		g_score.put(start, 0);
-		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(Integer.MAX_VALUE);
+		DefaultHashMap<Coord, Integer> f_score = new DefaultHashMap<Coord, Integer>(
+				Integer.MAX_VALUE);
 		f_score.put(start, g_score.get(start) + 10);
 		while (!openSet.isEmpty()) {
 			Coord current = f_score.keyOfLowestValue(openSet);
