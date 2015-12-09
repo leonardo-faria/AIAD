@@ -4,17 +4,18 @@ import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import main.Main;
+import sajas.core.AID;
 import sajas.core.Agent;
 import sajas.core.behaviours.Behaviour;
+import sajas.core.behaviours.CyclicBehaviour;
 import sajas.core.behaviours.SimpleBehaviour;
-import sajas.core.behaviours.TickerBehaviour;
 import sajas.domain.DFService;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
@@ -30,211 +31,176 @@ public abstract class Worker extends Agent implements Drawable {
 	int load;
 	int maxCharge;
 	int maxload;
-	// HashMap<jade.core.AID, Integer> proposeValues = new HashMap<>();
+	private jade.core.AID[] agents;
 
 	Coord pos;
 	Object2DGrid space;
 
-	public class RespondToTask extends Behaviour {
+	public class RespondToTask extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
-		boolean done;
-		
-		public RespondToTask() {
-			done = false;
-		}
+
 		@Override
 		public void action() {
-			ACLMessage msg = receive();
-			if(msg != null) {
-				switch (msg.getPerformative()) {
-				case ACLMessage.CFP:
-					System.out.println("Sou o " + myAgent.getName() + " e recebi uma msg com " + msg.getContent());
-					ACLMessage reply = msg.createReply();
-					if(this.getAgent().getName().equals("Agente3@Transportes")){
-						reply.setPerformative(ACLMessage.PROPOSE);
-						reply.setContent("100");
-					}
-					else {
-						reply.setPerformative(ACLMessage.PROPOSE);
-						reply.setContent("200");
-					}
-					send(reply);
-					done = true;
-					break;
-				case ACLMessage.ACCEPT_PROPOSAL:
-					System.out.println("Bue fixe sou o escolhido, aka " + this.getAgent().getName());
-					done = true;
-					//fazer task
-					break;
+			MessageTemplate mt = MessageTemplate
+					.MatchPerformative(ACLMessage.CFP);
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				System.out.println("Sou o " + myAgent.getName()
+						+ " e recebi uma msg com " + msg.getContent());
+				ACLMessage reply = msg.createReply();
+				if (myAgent.getName().equals("Agente3@Transportes")) {
+					reply.setContent("200");
+				} else {
+					reply.setContent("100");
 				}
+				reply.setPerformative(ACLMessage.PROPOSE);
+				send(reply);
+				System.out.println("Sou o " + myAgent.getName()
+						+ " e enviei uma proposta de " + reply.getContent());
+				addBehaviour(new TaskConfirmation());
+			} else {
+				block();
 			}
-			
+
+		}
+
+	}
+
+	public class TaskConfirmation extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+		private boolean done = false;
+		
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				System.out.println("Fui aceite sou especial - " + myAgent.getName());
+				done = true;
+			}
+			else {
+				block();
+			}
 		}
 
 		@Override
 		public boolean done() {
 			return done;
 		}
-		
+
 	}
-	
+
 	public class RequestTask extends Behaviour {
 		private static final long serialVersionUID = 1L;
 		private int numOfResponses = 0;
 		private int bestPrice;
 		private jade.core.AID winnerWorker;
-		private int step;
+		private int step = 0;
 		private String tipo;
+		private MessageTemplate mt;
 
 		public RequestTask() {
 			Object[] args = getArguments();
 			this.tipo = (String) args[0];
-			step = 0;
+			updateAgents();
 		}
 
 		@Override
 		public void action() {
-			
-//			ACLMessage msg = receive();
-//			if(msg != null) {
-//				switch (msg.getPerformative()) {
-//				case ACLMessage.CFP:
-//					System.out.println("Sou o " + this.getAgent().getName() + " e recebi uma msg com " + msg.getContent());
-//					ACLMessage reply = msg.createReply();
-//					if(this.getAgent().getName().equals("Agente3@Transportes")){
-//						reply.setPerformative(ACLMessage.PROPOSE);
-//						reply.setContent("100");
-//					}
-//					else
-//						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-//					send(reply);
-//					done = true;
-//					break;
-//				case ACLMessage.PROPOSE:
-//					int val = Integer.parseInt(msg.getContent());
-//					proposeValues.put(msg.getSender(), val);
-//					numOfResponses++;
-//					System.out.println("Agent " + this.getAgent().getName() + " has received a proposal of value "+ val);
-//					if(numOfResponses != Main.workerList.size() - 1){
-//						block();
-//					}
-//					else{
-//						int min = Collections.min(proposeValues.values());
-//						ACLMessage acc = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-//						ACLMessage rej = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-//						for (Entry<jade.core.AID, Integer> entry : proposeValues.entrySet()) {
-//							if(entry.getValue() == min && !acc.getAllReceiver().hasNext()){
-//								acc.addReceiver(entry.getKey());
-//							}
-//							else{
-//								rej.addReceiver(entry.getKey());
-//							}
-//						}
-//						if(acc.getAllReceiver() != null)
-//							send(acc);
-//						if(rej.getAllReceiver() != null)
-//							send(rej);
-//
-//						done = true;
-//					}
-//					break;
-//
-//				case ACLMessage.ACCEPT_PROPOSAL:
-//					System.out.println("Bue fixe sou o escolhido, aka " + this.getAgent().getName());
-//					done = true;
-//					//fazer task
-//					break;
-//				case ACLMessage.REJECT_PROPOSAL:
-//					if(isInAuction){
-//						System.out.println("Agent " + msg.getSender().getLocalName() + " has rejected me :("); 
-//						numOfResponses++;
-//						done = true;
-//					}
-//					else {
-//						System.out.println("kek cheiro mal, aka " + this.getAgent().getName());
-//						done = true;
-//					}
-//					break;
-//				default:
-//					done = true;
-//					break;
-//				}
-//			}
-//			else
-//				done = true;
-//			
-			
 			switch (step) {
-			 case 0:
-			 // Send the cfp to all workers
+			case 0:
+				// Send the cfp to all workers
 				// toma a iniciativa se for agente "sender"
-					if (tipo.equals("sender")) {
-						System.out.println("is sender");
-						isInAuction = true;
-						//numOfResponses = 0;
-						ACLMessage msg = new ACLMessage(ACLMessage.CFP);
-						for (int i = 0; i < Main.workerList.size(); i++){
-							if(Main.workerList.get(i).getAID() != myAgent.getAID())
-								msg.addReceiver(Main.workerList.get(i).getAID());
-						}
-						msg.setContent("Mano, queres trabalhar?");
-						send(msg);
-						step = 1;
+				if (tipo.equals("sender")) {
+					System.out.println("Step 0 - Sending messages to agents");
+					// isInAuction = true;
+					// numOfResponses = 0;
+					ACLMessage msg = new ACLMessage(ACLMessage.CFP);
+					for (int i = 0; i < agents.length; i++) {
+						if (agents[i] != myAgent.getAID())
+							msg.addReceiver(agents[i]);
 					}
-			 break;
-			 case 1:
-				 
-				 ACLMessage reply = myAgent.receive();
-				 if (reply != null) {
-				 // Reply received
-					 if (reply.getPerformative() == ACLMessage.PROPOSE) {
-						 // This is an offer
-						 int price = Integer.parseInt(reply.getContent());
-						 System.out.println("O agente " + reply.getSender().getName() + "ganhou com o preço " + price);
-						 if (winnerWorker == null || price < bestPrice) {
-							 // This is the best offer at present
-							 bestPrice = price;
-							 winnerWorker = reply.getSender();
-						 }
-					 }
-					 numOfResponses++;
-					 if (numOfResponses >= Main.workerList.size()) {
-						 //We received all replies
-						 step = 2;
-					 }
-				 }
-				 else {
-					 block();
-				 }
-				 break;
-			 case 2:
-				 // Send the confirmation to the worker that won the bid
-				 ACLMessage confirmation = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-				 confirmation.addReceiver(winnerWorker);
-				 confirmation.setContent("Ganhaste mano");
-				 myAgent.send(confirmation);
-				 step = 3;
-				 break;
-			 case 3:
-				 // Receive the confirmation when the task is done
-				 reply = myAgent.receive();
-				 if (reply != null) {
-					 // Confirmation received
-					 if (reply.getPerformative() == ACLMessage.INFORM) {
-						 // Task done
-						 System.out.println("Task done!");
-						 myAgent.doDelete();
-					 }
-					 step = 4;
-				 	}
-				 	else {
-				 		block();
-				 	}
-				 break;
-			} 
+					msg.setContent("Mano, queres trabalhar?");
+					msg.setConversationId("task-request");
+					msg.setReplyWith("msg" + System.currentTimeMillis());
+					send(msg);
+					mt = MessageTemplate
+							.and(MessageTemplate
+									.MatchConversationId("task-request"),
+									MessageTemplate.MatchInReplyTo(msg
+											.getReplyWith()));
+					step = 1;
+				}
+				break;
+			case 1:
+
+				ACLMessage reply = myAgent.receive(mt);
+				if (reply != null) {
+					// Reply received
+					System.out.println("Step1 - Reply received");
+					int price = Integer.MAX_VALUE;
+					if (reply.getPerformative() == ACLMessage.PROPOSE) {
+						// This is an offer
+						price = Integer.parseInt(reply.getContent());
+						System.out
+								.println("Recebi uma mensagem com a proposta de "
+										+ price);
+						if (winnerWorker == null || price < bestPrice) {
+							// This is the best offer at present
+							bestPrice = price;
+							winnerWorker = reply.getSender();
+						}
+					}
+					numOfResponses++;
+					if (numOfResponses >= agents.length - 1) {
+						// We received all replies
+						step = 2;
+						System.out.println("O agente "
+								+ winnerWorker.getName()
+								+ "ganhou com o preço " + price);
+					}
+				} else {
+					block();
+				}
+				break;
+			case 2:
+				// Send the confirmation to the worker that won the bid
+				System.out.println("Step2 - Sending confirmation\n");
+				ACLMessage confirmation = new ACLMessage(
+						ACLMessage.ACCEPT_PROPOSAL);
+				confirmation.addReceiver(winnerWorker);
+				confirmation.setContent("Ganhaste mano");
+				confirmation.setConversationId("task-request");
+				confirmation.setReplyWith("confirmation"
+						+ System.currentTimeMillis());
+				send(confirmation);
+				System.out.println(myAgent.getName() + " mandei a confirmação");
+				mt = MessageTemplate.and(MessageTemplate
+						.MatchConversationId("task-request"), MessageTemplate
+						.MatchInReplyTo(confirmation.getReplyWith()));
+				step = 3;
+				break;
+			case 3:
+				System.out.println("Step 3 - Waiting task complete status");
+				// Receive the confirmation when the task is done
+				reply = myAgent.receive(mt);
+				if (reply != null) {
+					// Confirmation received
+					if (reply.getPerformative() == ACLMessage.INFORM) {
+						// Task done
+						System.out.println("Task done!");
+						myAgent.doDelete();
+					}
+					step = 4;
+				} else {
+					block();
+				}
+				break;
+			}
 		}
-		
+
 		@Override
 		public boolean done() {
 			return ((step == 2 && winnerWorker == null) || step == 4);
@@ -297,25 +263,31 @@ public abstract class Worker extends Agent implements Drawable {
 		dfd.addServices(sd);
 		try {
 			DFService.register(this, dfd);
+			updateAgents();
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
 
-		// cria behaviour
+		// cria behaviours
 
-		TickerBehaviour tb = new TickerBehaviour(this, 100) {
-			private static final long serialVersionUID = 1L;
+		addBehaviour(new RequestTask());
+		addBehaviour(new RespondToTask());
+	}
 
-			protected void onTick() {
-				addBehaviour(new RequestTask());
-				addBehaviour(new RespondToTask());
+	private void updateAgents() {
+		// Update the list of seller agents
+		DFAgentDescription dfd = new DFAgentDescription();
+		ServiceDescription sd = new ServiceDescription();
+		dfd.addServices(sd);
+		try {
+			DFAgentDescription[] result = DFService.search(this, dfd);
+			agents = new AID[result.length];
+			for (int i = 0; i < result.length; ++i) {
+				agents[i] = result[i].getName();
 			}
-
-			public void onStart() {
-			}
-		};
-		addBehaviour(tb);
-
+		} catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
 	}
 
 	@Override

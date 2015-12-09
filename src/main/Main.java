@@ -1,12 +1,10 @@
 package main;
 
-import java.util.ArrayList;
-
-import agents.CarAgent;
-import agents.Wall;
-import agents.Worker;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+
+import java.util.ArrayList;
+
 import sajas.core.Runtime;
 import sajas.sim.repast3.Repast3Launcher;
 import sajas.wrapper.ContainerController;
@@ -15,6 +13,9 @@ import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.Object2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
+import agents.CarAgent;
+import agents.Wall;
+import agents.Worker;
 
 public class Main extends Repast3Launcher {
 
@@ -33,7 +34,7 @@ public class Main extends Repast3Launcher {
 	DisplaySurface dsurf;
 	Object2DGrid space;
 	ArrayList<Object> drawList;
-	public static ArrayList<Worker> workerList;
+	ArrayList<Worker> workerList;
 
 
 	public static void main(String[] args) {
