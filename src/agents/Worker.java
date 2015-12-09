@@ -52,15 +52,17 @@ public abstract class Worker extends Agent implements Drawable {
 				if (myAgent.getName().equals("Agente3@Transportes")) {
 					reply.setContent("200");
 					reply.setPerformative(ACLMessage.PROPOSE);
+					System.out.println("Sou o " + myAgent.getName()
+					+ " e enviei uma proposta de " + reply.getContent());
 					addBehaviour(new TaskConfirmation());
 					
 				} else {
 					reply.setContent("100");
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					System.out.println("Sou o " + myAgent.getName()
+					+ " e rejeitei a proposta");
 				}
 				send(reply);
-				System.out.println("Sou o " + myAgent.getName()
-				+ " e enviei uma proposta de " + reply.getContent());
 			} else {
 				block();
 			}
@@ -76,13 +78,14 @@ public abstract class Worker extends Agent implements Drawable {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			MessageTemplate mt = MessageTemplate
+					.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
-				System.out.println("Fui aceite sou especial - " + myAgent.getName());
+				System.out.println("Fui aceite sou especial - "
+						+ myAgent.getName());
 				done = true;
-			}
-			else {
+			} else {
 				block();
 			}
 		}
@@ -193,6 +196,8 @@ public abstract class Worker extends Agent implements Drawable {
 				} else {
 					block();
 				}
+				break;
+			default:
 				break;
 			}
 		}
