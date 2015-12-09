@@ -2,6 +2,7 @@ package product;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import agents.Holder;
 import agents.Worker;
@@ -12,8 +13,8 @@ public class Product {
 	int weight;
 	Worker Owner;
 	Holder location;
-	int id;
-	static int idgen = 0;
+	AtomicInteger id;
+	static AtomicInteger idgen = new AtomicInteger(0);
 
 	static HashMap<String, Pair<Integer, ArrayList<String>>> productTypes = new HashMap<String, Pair<Integer, ArrayList<String>>>();
 
@@ -23,7 +24,7 @@ public class Product {
 		this.name = name;
 		weight = productTypes.get(name).getKey();
 		this.location = owner;
-		id=idgen;
+		id = new AtomicInteger(idgen.incrementAndGet());
 	}
 
 	
