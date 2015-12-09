@@ -2,6 +2,8 @@ package main;
 
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+import locals.Warehouse;
+import product.Product;
 
 import java.util.ArrayList;
 
@@ -28,14 +30,15 @@ public class Main extends Repast3Launcher {
 	private int worldXSize = 100;
 	private int worldYSize = 100;
 
-	CarAgent car1,car2,car3;
+	CarAgent car1, car2, car3;
 	Wall wall;
 
 	DisplaySurface dsurf;
 	Object2DGrid space;
 	ArrayList<Object> drawList;
 	ArrayList<Worker> workerList;
-
+	Warehouse warehouse1;
+	Warehouse warehouse2;
 
 	public static void main(String[] args) {
 		SimInit init = new SimInit();
@@ -68,8 +71,16 @@ public class Main extends Repast3Launcher {
 			scheduleAgent(car1);
 			scheduleAgent(car2);
 			scheduleAgent(car3);
-		} catch (Exception e) {
 
+			warehouse1 = new Warehouse(new Coord(1, 1));
+			warehouse2 = new Warehouse(new Coord(40, 40));
+			Product.addType("p", 0, new ArrayList<>());
+			Product p =new Product("p", car1);
+			p.setLocation(warehouse2);
+			warehouse1.pickup(p);
+			System.out.println("plano:"+car1.planTransport(p, warehouse1));
+			car1.addBehaviour(car1.planTransport(p, warehouse1));
+		} catch (Exception e) {
 		}
 	}
 
@@ -95,7 +106,7 @@ public class Main extends Repast3Launcher {
 	}
 
 	@Override
-	public void begin() { 
+	public void begin() {
 		super.begin();
 		if (!BATCH_MODE) {
 			dsurf = new DisplaySurface(this, "T&T");
@@ -124,7 +135,7 @@ public class Main extends Repast3Launcher {
 	}
 
 	private void buildModel() {
-		for(int i = 0; i < workerList.size(); i++){
+		for (int i = 0; i < workerList.size(); i++) {
 			space.putObjectAt(workerList.get(i).getX(), workerList.get(i).getY(), workerList.get(i));
 			drawList.add(workerList.get(i));
 		}

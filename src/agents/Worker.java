@@ -157,18 +157,18 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		Coord location;
 		boolean done;
+
 		public Charge(Coord c) {
 			location = c;
-			done=false;
+			done = false;
 		}
 
 		@Override
 		public void action() {
-			if (getCoord().equals(location))
-			{
-				System.out.println("charged!!!");
+			if (getCoord().equals(location)) {
+				System.out.println("charged");
 				fullCharge();
-				done=true;
+				done = true;
 			}
 		}
 
@@ -179,23 +179,29 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	}
 
-	
 	public Job planAssemble(String productType, Coord location) {
 		return null;
 	}
 
 	public Job planTransport(Product p, Holder location) {
+		return planTransport(p, location, charge);
+	}
+
+	public Job planTransport(Product p, Holder location, int charge) {
 		ArrayList<Behaviour> tasks = new ArrayList<Behaviour>();
 		ArrayList<Tool> tools = new ArrayList<Tool>();
 		if (p.getWeight() > this.maxload)
 			return null;
 		if (!stored.contains(p)) {
 			if (!this.getCoord().equals(p.getLocation().getCoord())) {
-				tasks.add(createMoves(makeRoute(getCoord(), p.getLocation().getCoord())));
+				Pair<Pair<LinkedList<Coord>,Coord>, Integer> route = makeRoute(getCoord(), p.getLocation().getCoord(), charge);
+				tasks.add(createMoves(route.getKey()));
+				charge = route.getValue();
 			}
 			tasks.add(new Pickup(p, p.getLocation()));
 		}
-		tasks.add(createMoves(makeRoute(getCoord(), location.getCoord())));
+		tasks.add(createMoves(makeRoute(p.getLocation().getCoord(), location.getCoord(), charge).getKey()));
+		System.out.println(charge);
 		tasks.add(new Drop(p, location));
 		return new Job(tasks, tools, 0);
 	}
@@ -405,7 +411,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				setToCharge = false;
 			}
 			if (x++ == speed) {
-				((Worker) myAgent).charge--;
+				Worker.this.charge--;
 				Coord c = cl.getFirst();
 				space.putObjectAt(Worker.this.pos.getX(), Worker.this.pos.getY(), null);
 				Worker.this.pos.setX(c.getX());
@@ -502,11 +508,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		this.pos.setY(y);
 	}
 
-	public Pair<LinkedList<Coord>, Coord> makeRoute(Coord start, Coord goal) {
+	public Pair<Pair<LinkedList<Coord>, Coord>, Integer> makeRoute(Coord start, Coord goal) {
 		return makeRoute(start, goal, charge);
 	}
 
-	public Pair<LinkedList<Coord>, Coord> makeRoute(Coord start, Coord goal, int charge) {
+	public Pair<Pair<LinkedList<Coord>, Coord>, Integer> makeRoute(Coord start, Coord goal, int charge) {
 
 		ArrayList<Coord> openSet = new ArrayList<Coord>();
 		openSet.add(start);
@@ -529,12 +535,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					moves.addFirst(current);
 				}
 				if (possibleRoute(moves, charge)) {
-					return new Pair<LinkedList<Coord>, Coord>(moves, null);
+					return new Pair<Pair<LinkedList<Coord>, Coord>, Integer>(new Pair<LinkedList<Coord>, Coord>(moves, null), charge - moves.size());
 				} else {
 					moves = closestChargerPath(start);
 					Coord chargePos = moves.getLast();
-					moves.addAll(makeRoute(moves.getLast(), goal, maxCharge).getKey());
-					return new Pair<LinkedList<Coord>, Coord>(moves, chargePos);
+					LinkedList<Coord> r = makeRoute(moves.getLast(), goal, maxCharge).getKey().getKey();
+					moves.addAll(r);
+					return new Pair<Pair<LinkedList<Coord>,Coord>,Integer>( new Pair<LinkedList<Coord>, Coord>(moves, chargePos),maxCharge-r.size());
 				}
 			}
 
