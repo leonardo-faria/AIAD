@@ -26,7 +26,7 @@ import utils.DefaultHashMap;
 public abstract class Worker extends Agent implements Drawable {
 
 	int speed;
-	boolean fly, isInAuction;
+	boolean fly;
 	int charge;
 	int load;
 	int maxCharge;
@@ -47,18 +47,20 @@ public abstract class Worker extends Agent implements Drawable {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				System.out.println("Sou o " + myAgent.getName()
-						+ " e recebi uma msg com " + msg.getContent());
+				+ " e recebi uma msg com " + msg.getContent());
 				ACLMessage reply = msg.createReply();
 				if (myAgent.getName().equals("Agente3@Transportes")) {
 					reply.setContent("200");
+					reply.setPerformative(ACLMessage.PROPOSE);
+					addBehaviour(new TaskConfirmation());
+					
 				} else {
 					reply.setContent("100");
+					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 				}
-				reply.setPerformative(ACLMessage.PROPOSE);
 				send(reply);
 				System.out.println("Sou o " + myAgent.getName()
-						+ " e enviei uma proposta de " + reply.getContent());
-				addBehaviour(new TaskConfirmation());
+				+ " e enviei uma proposta de " + reply.getContent());
 			} else {
 				block();
 			}
@@ -71,7 +73,7 @@ public abstract class Worker extends Agent implements Drawable {
 
 		private static final long serialVersionUID = 1L;
 		private boolean done = false;
-		
+
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
@@ -94,16 +96,16 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public class RequestTask extends Behaviour {
 		private static final long serialVersionUID = 1L;
-		private int numOfResponses = 0;
+		private int numOfResponses;
 		private int bestPrice;
 		private jade.core.AID winnerWorker;
-		private int step = 0;
-		private String tipo;
+		private int step;
 		private MessageTemplate mt;
 
 		public RequestTask() {
-			Object[] args = getArguments();
-			this.tipo = (String) args[0];
+			bestPrice = Integer.MAX_VALUE;
+			step = 0;
+			numOfResponses = 0;
 			updateAgents();
 		}
 
@@ -112,27 +114,22 @@ public abstract class Worker extends Agent implements Drawable {
 			switch (step) {
 			case 0:
 				// Send the cfp to all workers
-				// toma a iniciativa se for agente "sender"
-				if (tipo.equals("sender")) {
-					System.out.println("Step 0 - Sending messages to agents");
-					// isInAuction = true;
-					// numOfResponses = 0;
-					ACLMessage msg = new ACLMessage(ACLMessage.CFP);
-					for (int i = 0; i < agents.length; i++) {
-						if (agents[i] != myAgent.getAID())
-							msg.addReceiver(agents[i]);
-					}
-					msg.setContent("Mano, queres trabalhar?");
-					msg.setConversationId("task-request");
-					msg.setReplyWith("msg" + System.currentTimeMillis());
-					send(msg);
-					mt = MessageTemplate
-							.and(MessageTemplate
-									.MatchConversationId("task-request"),
-									MessageTemplate.MatchInReplyTo(msg
-											.getReplyWith()));
-					step = 1;
+				System.out.println("Step 0 - Sending messages to agents");
+				ACLMessage msg = new ACLMessage(ACLMessage.CFP);
+				for (int i = 0; i < agents.length; i++) {
+					if (agents[i] != myAgent.getAID())
+						msg.addReceiver(agents[i]);
 				}
+				msg.setContent("Mano, queres trabalhar?");
+				msg.setConversationId("task-request");
+				msg.setReplyWith("msg" + System.currentTimeMillis());
+				send(msg);
+				mt = MessageTemplate
+						.and(MessageTemplate
+								.MatchConversationId("task-request"),
+								MessageTemplate.MatchInReplyTo(msg
+										.getReplyWith()));
+				step = 1;
 				break;
 			case 1:
 
@@ -140,14 +137,13 @@ public abstract class Worker extends Agent implements Drawable {
 				if (reply != null) {
 					// Reply received
 					System.out.println("Step1 - Reply received");
-					int price = Integer.MAX_VALUE;
 					if (reply.getPerformative() == ACLMessage.PROPOSE) {
 						// This is an offer
-						price = Integer.parseInt(reply.getContent());
+						int price = Integer.parseInt(reply.getContent());
 						System.out
-								.println("Recebi uma mensagem com a proposta de "
-										+ price);
-						if (winnerWorker == null || price < bestPrice) {
+						.println("Recebi uma mensagem com a proposta de "
+								+ price);
+						if (price < bestPrice) {
 							// This is the best offer at present
 							bestPrice = price;
 							winnerWorker = reply.getSender();
@@ -159,7 +155,7 @@ public abstract class Worker extends Agent implements Drawable {
 						step = 2;
 						System.out.println("O agente "
 								+ winnerWorker.getName()
-								+ "ganhou com o preço " + price);
+								+ " ganhou com o preço " + bestPrice);
 					}
 				} else {
 					block();
@@ -242,7 +238,6 @@ public abstract class Worker extends Agent implements Drawable {
 
 	public Worker(Coord c, Object2DGrid space) {
 		pos = c;
-		isInAuction = false;
 		this.space = space;
 	}
 
@@ -270,7 +265,9 @@ public abstract class Worker extends Agent implements Drawable {
 
 		// cria behaviours
 
-		addBehaviour(new RequestTask());
+		if(getLocalName().equals("Agente2"))
+			addBehaviour(new RequestTask());
+
 		addBehaviour(new RespondToTask());
 	}
 
@@ -372,7 +369,7 @@ public abstract class Worker extends Agent implements Drawable {
 				f_score.put(
 						neighbor.get(i),
 						tentative_g_score
-								+ Coord.heuristic(neighbor.get(i), goal));
+						+ Coord.heuristic(neighbor.get(i), goal));
 			}
 		}
 		return null;
