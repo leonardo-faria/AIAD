@@ -71,16 +71,17 @@ public abstract class Worker extends Agent implements Drawable {
 
 		private static final long serialVersionUID = 1L;
 		private boolean done = false;
-		
+
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			MessageTemplate mt = MessageTemplate
+					.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
-				System.out.println("Fui aceite sou especial - " + myAgent.getName());
+				System.out.println("Fui aceite sou especial - "
+						+ myAgent.getName());
 				done = true;
-			}
-			else {
+			} else {
 				block();
 			}
 		}
@@ -197,6 +198,8 @@ public abstract class Worker extends Agent implements Drawable {
 				} else {
 					block();
 				}
+				break;
+			default:
 				break;
 			}
 		}
