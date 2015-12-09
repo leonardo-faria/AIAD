@@ -9,7 +9,7 @@ public class CarAgent extends Worker {
 		super(c, space);
 		charge= 10;
 		maxCharge= 1000;
-		speed=10;
+		speed=1;
 		scheduleMoves(makeRoute(c, new Coord(80, 80)));
 	}
 }

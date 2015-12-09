@@ -57,12 +57,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					System.out.println("Sou o " + myAgent.getName()
 					+ " e enviei uma proposta de " + reply.getContent());
 					addBehaviour(new TaskConfirmation());
-					
+
 				} else {
 					reply.setContent("100");
-					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out.println("Sou o " + myAgent.getName()
-					+ " e rejeitei a proposta");
+					+ " e enviei uma proposta de " + reply.getContent());
+					addBehaviour(new TaskConfirmation());
 				}
 				send(reply);
 			} else {
@@ -80,12 +81,19 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate
-					.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			MessageTemplate mt  = MessageTemplate.or(MessageTemplate
+					.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL), MessageTemplate
+					.MatchPerformative(ACLMessage.REJECT_PROPOSAL));
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
-				System.out.println("Fui aceite sou especial - "
-						+ myAgent.getName());
+				if(msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL){
+					System.out.println("Fui aceite sou especial - "
+							+ myAgent.getName());
+				}
+				else {
+					System.out.println("Lol caguei nem a queria - "
+							+ myAgent.getName());
+				}
 				done = true;
 			} else {
 				block();
@@ -104,11 +112,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private int numOfResponses;
 		private int bestPrice;
 		private jade.core.AID winnerWorker;
+		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
 		private MessageTemplate mt;
 
 		public RequestTask() {
 			bestPrice = Integer.MAX_VALUE;
+			rejectedAgents = new ArrayList<jade.core.AID>();
 			step = 0;
 			numOfResponses = 0;
 			updateAgents();
@@ -150,9 +160,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 								+ price);
 						if (price < bestPrice) {
 							// This is the best offer at present
+							if(winnerWorker != null)
+								rejectedAgents.add(winnerWorker);
 							bestPrice = price;
 							winnerWorker = reply.getSender();
 						}
+						else
+							rejectedAgents.add(reply.getSender());
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -167,7 +181,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 				break;
 			case 2:
-				// Send the confirmation to the worker that won the bid
+				// Send the confirmation to the worker that won the bid and rejections to all the rest
 				System.out.println("Step2 - Sending confirmation\n");
 				ACLMessage confirmation = new ACLMessage(
 						ACLMessage.ACCEPT_PROPOSAL);
@@ -177,6 +191,16 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				confirmation.setReplyWith("confirmation"
 						+ System.currentTimeMillis());
 				send(confirmation);
+
+				ACLMessage rejection = new ACLMessage(
+						ACLMessage.REJECT_PROPOSAL);
+				for(int i = 0; i < rejectedAgents.size(); i++)
+					rejection.addReceiver(rejectedAgents.get(i));
+				rejection.setConversationId("task-request");
+				rejection.setReplyWith("confirmation"
+						+ System.currentTimeMillis());
+				send(rejection);
+
 				System.out.println(myAgent.getName() + " mandei a confirmação");
 				mt = MessageTemplate.and(MessageTemplate
 						.MatchConversationId("task-request"), MessageTemplate
@@ -460,7 +484,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	public void pickup(Product p) {
 		stored.add(p);
 	}
-	
+
 	public void drop(Product p){
 		stored.remove(p);
 	}
