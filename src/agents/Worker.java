@@ -159,7 +159,7 @@ public abstract class Worker extends Agent implements Drawable {
 						step = 2;
 						System.out.println("O agente "
 								+ winnerWorker.getName()
-								+ "ganhou com o preço " + price);
+								+ "ganhou com o preço " + bestPrice);
 					}
 				} else {
 					block();
