@@ -11,7 +11,6 @@ import javafx.util.Pair;
 public class Product {
 	String name;
 	int weight;
-	Worker Owner;
 	Holder location;
 	AtomicInteger id;
 	static AtomicInteger idgen = new AtomicInteger(0);
@@ -43,12 +42,12 @@ public class Product {
 	
 	private int price;
 	
-	public Product(String name, Holder owner) {
+	public Product(String name, Holder location) {
 		if (!productTypes.containsKey(name))
 			productTypes.put(name, new ProSpecs(0, 0));
 		this.name = name;
 		weight = productTypes.get(name).weight;
-		this.location = owner;
+		this.location = location;
 		id = new AtomicInteger(idgen.incrementAndGet());
 	}
 

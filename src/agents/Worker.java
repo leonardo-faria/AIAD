@@ -11,6 +11,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import javafx.util.Pair;
+import locals.Local;
 import main.Main;
 import product.Product;
 import sajas.core.AID;
@@ -62,20 +63,20 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				break;
 			case TRANSPORT_TASK:
 				Product p = null;
-				//Formato_conteudo: Nome_Produto Nome_Agente Nome_Local Tempo
-				for(int i=0;i<Main.workerList.size();i++){
-					if(Main.workerList.get(i).getName().equals(specs[1])){
-						p = new Product(specs[0], Main.workerList.get(i));
-						break;
-					}
-				}
+				Local l = null;
+				//Formato_conteudo: Nome_Produto Nome_Local1 Nome_Local2 Tempo
 				for(int i=0;i<Main.locals.size();i++){
+					if(Main.locals.get(i).getName().equals(specs[1])){
+						p = new Product(specs[0], Main.locals.get(i)); //TODO mudar para lista d produtos
+						
+					}
 					if(Main.locals.get(i).getName().equals(specs[2])){
-						proposed = planTransport(p, Main.locals.get(i));
-						break;
+						 l = Main.locals.get(i);
 					}
 				}
-				proposed.time = Integer.parseInt(specs[3]);
+
+				proposed = planTransport(p, l);
+				proposed.maxtime = Integer.parseInt(specs[3]);
 				break;
 
 			default:
@@ -92,6 +93,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		ArrayList<Behaviour> tasks;
 		ArrayList<Tool> tools;
+		int maxtime=0;
 		int time;
 		int step;
 		boolean started;
@@ -357,7 +359,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mesa " + myAgent.getName() + " Warehouse1 8000");
+				msg.setContent("Mesa Warehouse2 Warehouse1 8000");
 				request = "task-3";
 				msg.setConversationId(request);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
