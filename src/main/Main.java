@@ -72,9 +72,9 @@ public class Main extends Repast3Launcher {
 			scheduleAgent(car2);
 			scheduleAgent(car3);
 
-			warehouse1 = new Warehouse(new Coord(1, 1));
+			warehouse1 = new Warehouse(new Coord(50, 20));
 			warehouse2 = new Warehouse(new Coord(40, 40));
-			Product.addType("p", 0, new ArrayList<>());
+			Product.addType("p", 0);
 			Product p =new Product("p", car1);
 			p.setLocation(warehouse2);
 			warehouse1.pickup(p);

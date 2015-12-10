@@ -16,26 +16,37 @@ public class Product {
 	AtomicInteger id;
 	static AtomicInteger idgen = new AtomicInteger(0);
 
-	static HashMap<String, Pair<Integer, ArrayList<String>>> productTypes = new HashMap<String, Pair<Integer, ArrayList<String>>>();
-
-	public Product(String name, Holder owner) throws Exception {
+	static HashMap<String,  ProSpecs> productTypes = new HashMap<>();
+	
+	public class ProSpecs{
+		public int weight;
+		public int price;
+		public ProSpecs(int weight, int price) {
+			super();
+			this.weight = weight;
+			this.price = price;
+		}
+	}
+	
+	
+	private int price;
+	
+	public Product(String name, Holder owner) {
 		if (!productTypes.containsKey(name))
-			throw new Exception("inexistent type:" + name);
+			productTypes.put(name, new ProSpecs(0, 0));
 		this.name = name;
-		weight = productTypes.get(name).getKey();
+		weight = productTypes.get(name).weight;
 		this.location = owner;
 		id = new AtomicInteger(idgen.incrementAndGet());
 	}
 
-	
 	@Override
 	public boolean equals(Object obj) {
 		return id == ((Product) obj).id;
 	}
 
-
-	static public void addType(String s, int w, ArrayList<String> a) {
-		productTypes.put(s, new Pair<Integer, ArrayList<String>>(w, a));
+	static public void addType(String s,ProSpecs p) {
+		productTypes.put(s, p);
 	}
 
 	public String getName() {
@@ -62,8 +73,11 @@ public class Product {
 		this.location = location;
 	}
 
-	public static HashMap<String, Pair<Integer, ArrayList<String>>> getProductTypes() {
+	public static HashMap<String, ProSpecs> getProductTypes() {
 		return productTypes;
 	}
 
+	public int getCost(){
+		return price;
+	}
 }

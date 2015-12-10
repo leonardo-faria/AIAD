@@ -40,7 +40,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	Coord pos;
 	Object2DGrid space;
-
+	
 	public class Job extends SimpleBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -59,6 +59,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			started = false;
 			done = false;
 			step = 0;
+		}
+		
+		public int cost(){
+			return time;
 		}
 
 		@Override
@@ -81,6 +85,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 	}
+
 
 	public class Pickup extends SimpleBehaviour {
 
