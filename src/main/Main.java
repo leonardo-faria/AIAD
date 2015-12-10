@@ -2,6 +2,7 @@ package main;
 
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+import locals.Local;
 import locals.Warehouse;
 import product.Product;
 import product.Product.ProSpecs;
@@ -37,9 +38,8 @@ public class Main extends Repast3Launcher {
 	DisplaySurface dsurf;
 	Object2DGrid space;
 	ArrayList<Object> drawList;
-	ArrayList<Worker> workerList;
-	Warehouse warehouse1;
-	Warehouse warehouse2;
+	public static ArrayList<Worker> workerList;
+	public static ArrayList<Local> locals;
 
 	public static void main(String[] args) {
 		SimInit init = new SimInit();
@@ -73,14 +73,16 @@ public class Main extends Repast3Launcher {
 			scheduleAgent(car2);
 			scheduleAgent(car3);
 
-			warehouse1 = new Warehouse(new Coord(50, 20));
-			warehouse2 = new Warehouse(new Coord(40, 40));
+			locals = new ArrayList<>();
+			
+			locals.add(new Warehouse(new Coord(50, 20),1));
+			locals.add(new Warehouse(new Coord(40, 40),2));
 			Product.addType("p", new ProSpecs(0, 0));
 			Product p =new Product("p", car1);
-			p.setLocation(warehouse2);
-			warehouse1.pickup(p);
-			System.out.println("plano:"+car1.planTransport(p, warehouse1));
-			car1.addBehaviour(car1.planTransport(p, warehouse1));
+			p.setLocation(locals.get(1));
+			locals.get(0).pickup(p);
+			System.out.println("plano:"+car1.planTransport(p, locals.get(0)));
+			car1.addBehaviour(car1.planTransport(p, locals.get(0)));
 		} catch (Exception e) {
 		}
 	}

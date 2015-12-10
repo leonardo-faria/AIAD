@@ -6,28 +6,9 @@ import agents.Holder;
 import product.Product;
 import utils.Coord;
 
-public class Warehouse extends Local implements Holder {
-	ArrayList<Product> stored;
-	Coord pos;
+public class Warehouse extends Local {
 	
-	public Warehouse(Coord p) {
-		pos = p;
-		stored = new ArrayList<Product>();
+	public Warehouse(Coord p,int id) {
+		super(p,id,"Warehouse",new ArrayList<Product>());
 	}
-	
-	@Override
-	public void pickup(Product p) {
-		stored.add(p);
-	}
-
-	@Override
-	public void drop(Product p) {
-		stored.remove(p);
-	}
-
-	@Override
-	public Coord getCoord() {
-		return pos;
-	}
-
 }

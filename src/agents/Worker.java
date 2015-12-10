@@ -11,6 +11,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import javafx.util.Pair;
+import main.Main;
 import product.Product;
 import sajas.core.AID;
 import sajas.core.Agent;
@@ -47,29 +48,39 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Coord pos;
 	Object2DGrid space;
 
-	public ArrayList<Job> parseJob(String id, String content){
-		
+	public Job parseJob(String id, String content){
+		Job proposed = null;
 		String[] tasksID = id.split("-");
-		String[] tasksSpecs = content.split("/");
-		ArrayList<Behaviour> tasks = new ArrayList<Behaviour>();
-		ArrayList<Job> jobs = new ArrayList<Job>();
-		for(int i = 1; i < tasksID.length;i++){
-			switch (tasksID[i]) {
+		String[] specs = content.split(" ");
+		updateAgents();
+			switch (tasksID[1]) {
 			case ASSEMBLY_TASK:
-				System.out.println(tasksID[i]+" -> "+tasksSpecs[i-1]);
 				break;
 			case AQUISITION_TASK:
-				System.out.println(tasksSpecs[i-1]);
+				
 				break;
 			case TRANSPORT_TASK:
-				System.out.println(tasksID[i]+" -> "+tasksSpecs[i-1]);
+				Product p = null;
+				//Formato_conteudo: Nome_Produto Nome_Agente Nome_Local 
+				for(int i=0;i<Main.workerList.size();i++){
+					if(Main.workerList.get(i).getName().equals(specs[1])){
+						p = new Product(specs[0], Main.workerList.get(i));
+						break;
+					}
+				}
+				for(int i=0;i<Main.locals.size();i++){
+					if(Main.locals.get(i).getName().equals(specs[2])){
+						proposed = planTransport(p, Main.locals.get(i));
+						break;
+					}
+				}
 				break;
 
 			default:
 				break;
 			}
-		}
-		return null;
+			
+		return proposed;
 
 	}
 	
@@ -343,8 +354,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("assemble1 assemble2/trans1 trans2");
-				String request = "task-1-3";
+				msg.setContent("Mesa " + myAgent.getName() + " Warehouse1");
+				String request = "task-3";
 				msg.setConversationId(request);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
