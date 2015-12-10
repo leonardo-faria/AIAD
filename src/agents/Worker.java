@@ -43,6 +43,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	int maxCharge;
 	int maxload;
 	private jade.core.AID[] agents;
+	Behaviour requestedJob;
 
 	ArrayList<Product> stored;
 	ArrayList<Product> owned;
@@ -50,46 +51,46 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Coord pos;
 	Object2DGrid space;
 
-	public Job parseJob(String id, String content){
+	public Job parseJob(ACLMessage msg){
 		Job proposed = null;
-		String[] tasksID = id.split("-");
-		String[] specs = content.split(" ");
-			switch (tasksID[1]) {
-			case ASSEMBLY_TASK:
-				//Formato_conteudo: Tipo_Produto Coord_X Coord_Y
-				proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])));
-				break;
-			case AQUISITION_TASK:
-				
-				break;
-			case TRANSPORT_TASK:
-				Product p = null;
-				Local l = null;
-				//Formato_conteudo: Nome_Produto Nome_Local1 Nome_Local2 Tempo
-				for(int i=0;i<Main.locals.size();i++){
-					if(Main.locals.get(i).getName().equals(specs[1])){
-						p = new Product(specs[0], Main.locals.get(i)); //TODO mudar para lista d produtos
-						
-					}
-					if(Main.locals.get(i).getName().equals(specs[2])){
-						 l = Main.locals.get(i);
-					}
+		String[] tasksID = msg.getConversationId().split("-");
+		String[] specs = msg.getContent().split(" ");
+		switch (tasksID[1]) {
+		case ASSEMBLY_TASK:
+			//Formato_conteudo: Tipo_Produto Coord_X Coord_Y
+			proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])));
+			break;
+		case AQUISITION_TASK:
+
+			break;
+		case TRANSPORT_TASK:
+			Product p = null;
+			Local l = null;
+			//Formato_conteudo: Nome_Produto Nome_Local1 Nome_Local2 Tempo
+			for(int i=0;i<Main.locals.size();i++){
+				if(Main.locals.get(i).getName().equals(specs[1])){
+					p = new Product(specs[0], Main.locals.get(i)); //TODO mudar para lista d produtos
+
 				}
-
-				proposed = planTransport(p, l);
-				proposed.maxtime = Integer.parseInt(specs[3]);
-				break;
-
-			default:
-				break;
+				if(Main.locals.get(i).getName().equals(specs[2])){
+					l = Main.locals.get(i);
+				}
 			}
-			
+
+			proposed = planTransport(p, l, msg.getSender());
+			proposed.maxtime = Integer.parseInt(specs[3]);
+			break;
+
+		default:
+			break;
+		}
+
 		return proposed;
 
 	}
-	
+
 	public class Job extends SimpleBehaviour {
-		
+
 		private static final long serialVersionUID = 1L;
 
 		ArrayList<Behaviour> tasks;
@@ -98,12 +99,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		int time;
 		int step;
 		boolean started;
+		private jade.core.AID requester;
 		boolean done;
 
-		public Job(ArrayList<Behaviour> tasks, ArrayList<Tool> tools, int time) {
+		public Job(ArrayList<Behaviour> tasks, ArrayList<Tool> tools, int time,jade.core.AID requester) {
 			this.tasks = tasks;
 			this.tools = tools;
 			this.time = time;
+			this.requester = requester;
 			started = false;
 			done = false;
 			step = 0;
@@ -130,6 +133,16 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		@Override
 		public boolean done() {
 			return done;
+		}
+		@Override
+		public int onEnd(){
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			msg.setContent("done");
+			msg.addReceiver(requester);
+			send(msg);
+			System.out.println("Fiz a tarefa e enviei a confirmação");
+			return maxtime;
+			
 		}
 
 	}
@@ -236,11 +249,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		return null;
 	}
 
-	public Job planTransport(Product p, Holder location) {
-		return planTransport(p, location, charge);
+	public Job planTransport(Product p, Holder location, jade.core.AID requester) {
+		return planTransport(p, location, charge,requester);
 	}
 
-	public Job planTransport(Product p, Holder location, int charge) {
+	public Job planTransport(Product p, Holder location, int charge, jade.core.AID requester) {
 		ArrayList<Behaviour> tasks = new ArrayList<Behaviour>();
 		ArrayList<Tool> tools = new ArrayList<Tool>();
 		if (p.getWeight() > this.maxload)
@@ -256,7 +269,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		tasks.add(createMoves(makeRoute(p.getLocation().getCoord(), location.getCoord(), charge).getKey()));
 		System.out.println(charge);
 		tasks.add(new Drop(p, location));
-		return new Job(tasks, tools, 0);
+		return new Job(tasks, tools, 0, requester);
 	}
 
 	public class RespondToTask extends CyclicBehaviour {
@@ -275,9 +288,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				ACLMessage reply = msg.createReply();
 
 				//analisar conteudo, ver se vale a pena fazer a tarefa
-				parseJob(msg.getConversationId(),content);
+				parseJob(msg);
 				if (myAgent.getName().equals("Agente3@Transportes")) {
-					reply.setContent("200");
+					reply.setContent("50");
 					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out
 					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
@@ -298,34 +311,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 	}
-	
-	public class jobDone extends Behaviour {
-		
-		private String name;
-		private jade.core.AID requester;
-		public jobDone(Job j, String name, jade.core.AID requester) {
-			this.name = name;
-			this.requester = requester;
-		}
-		
-		@Override
-		public void action() {
-			// TODO Auto-generated method stub
-			
-		}
 
-		@Override
-		public boolean done() {
-			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-			msg.setContent("done");
-			msg.addReceiver(requester);
-			send(msg);
-			System.out.println("Fiz a tarefa " + name + " e enviei a confirmação");
-			return true;
-		}
-		
-	}
-	
 	public class RespondToFixedTask extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -345,8 +331,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					System.out
 					.println("Sou o " + myAgent.getName() + " e enviei a confirmação de que ia tentar fazer a tarefa " + msg.getContent());
 					//criar job
-					Job b = null;
-					addBehaviour(new jobDone(b, msg.getConversationId(), msg.getSender()));
+					Job b = parseJob(msg);
+
+					addBehaviour(b);
 				} else {
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
@@ -390,9 +377,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 	}
-	
+
 	public class RequestTaskFixedPrice extends Behaviour {
-		
+
 		private static final long serialVersionUID = 1L;
 		private int numOfResponses = 0;
 		private int numAccepted = 0;
@@ -401,12 +388,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		String request;
 		private boolean done = false;
 		private MessageTemplate mt;
-		
+
 		public RequestTaskFixedPrice(int price) {
 			this.price = price;
 			updateAgents();
 		}
-		
+
 		@Override
 		public void action() {
 			switch (step) {
@@ -418,8 +405,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mesa Warehouse1 " + price);
-				request = "task-fixed-3";
+				msg.setContent("Mesa Warehouse1 Warehouse2 " + price);
+				request = "task-3";
 				msg.setConversationId(request);
 				msg.setReplyWith("msg-fixed" + System.currentTimeMillis());
 				send(msg);
@@ -435,7 +422,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
 						System.out.println("Recebi uma confirmação a dizer que o agente " + reply.getSender() + "vai tentar faze-la");
 						numAccepted++;
-						
+
 					}
 					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
 						System.out.println("Recebi uma rejeição a dizer que o agente " + reply.getSender() + "não vai fazer a tarefa");
@@ -484,7 +471,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		public boolean done() {
 			return done;
 		}
-		
+
 	}
 
 	public class RequestTask extends Behaviour {
