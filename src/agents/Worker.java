@@ -52,16 +52,17 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		Job proposed = null;
 		String[] tasksID = id.split("-");
 		String[] specs = content.split(" ");
-		updateAgents();
 			switch (tasksID[1]) {
 			case ASSEMBLY_TASK:
+				//Formato_conteudo: Tipo_Produto Coord_X Coord_Y
+				proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])));
 				break;
 			case AQUISITION_TASK:
 				
 				break;
 			case TRANSPORT_TASK:
 				Product p = null;
-				//Formato_conteudo: Nome_Produto Nome_Agente Nome_Local 
+				//Formato_conteudo: Nome_Produto Nome_Agente Nome_Local Tempo
 				for(int i=0;i<Main.workerList.size();i++){
 					if(Main.workerList.get(i).getName().equals(specs[1])){
 						p = new Product(specs[0], Main.workerList.get(i));
@@ -74,6 +75,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						break;
 					}
 				}
+				proposed.time = Integer.parseInt(specs[3]);
 				break;
 
 			default:
@@ -273,17 +275,17 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				parseJob(msg.getConversationId(),content);
 				if (myAgent.getName().equals("Agente3@Transportes")) {
 					reply.setContent("200");
-					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out
 					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
-					//addBehaviour(new TaskConfirmation());
+					addBehaviour(new TaskConfirmation());
 
 				} else {
 					reply.setContent("100");
-					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out
 					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
-					//addBehaviour(new TaskConfirmation());
+					addBehaviour(new TaskConfirmation());
 				}
 				send(reply);
 			} else {
@@ -331,6 +333,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
 		private long    timeout, wakeupTime;
+		String request;
 		private MessageTemplate mt;
 
 		public RequestTask() {
@@ -354,8 +357,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mesa " + myAgent.getName() + " Warehouse1");
-				String request = "task-3";
+				msg.setContent("Mesa " + myAgent.getName() + " Warehouse1 8000");
+				request = "task-3";
 				msg.setConversationId(request);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
@@ -408,19 +411,19 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				ACLMessage confirmation = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 				confirmation.addReceiver(winnerWorker);
 				confirmation.setContent("Ganhaste mano");
-				confirmation.setConversationId("task-request");
+				confirmation.setConversationId(request);
 				confirmation.setReplyWith("confirmation" + System.currentTimeMillis());
 				send(confirmation);
 
 				ACLMessage rejection = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
 				for (int i = 0; i < rejectedAgents.size(); i++)
 					rejection.addReceiver(rejectedAgents.get(i));
-				rejection.setConversationId("task-request");
+				rejection.setConversationId(request);
 				rejection.setReplyWith("confirmation" + System.currentTimeMillis());
 				send(rejection);
 
 				System.out.println(myAgent.getName() + " mandei a confirmação");
-				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("task-request"),
+				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
 						MessageTemplate.MatchInReplyTo(confirmation.getReplyWith()));
 				step = 3;
 				break;
