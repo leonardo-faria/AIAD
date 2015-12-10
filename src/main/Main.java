@@ -2,13 +2,13 @@ package main;
 
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+
+import java.util.ArrayList;
+
 import locals.Local;
 import locals.Warehouse;
 import product.Product;
 import product.Product.ProSpecs;
-
-import java.util.ArrayList;
-
 import sajas.core.Runtime;
 import sajas.sim.repast3.Repast3Launcher;
 import sajas.wrapper.ContainerController;
@@ -81,7 +81,6 @@ public class Main extends Repast3Launcher {
 			Product p =new Product("p", car1);
 			p.setLocation(locals.get(1));
 			locals.get(0).pickup(p);
-			System.out.println("plano:"+car1.planTransport(p, locals.get(0)));
 			car1.addBehaviour(car1.planTransport(p, locals.get(0)));
 		} catch (Exception e) {
 		}

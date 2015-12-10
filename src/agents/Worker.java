@@ -1,15 +1,16 @@
 package agents;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import javafx.util.Pair;
 import locals.Local;
 import main.Main;
@@ -19,8 +20,6 @@ import sajas.core.Agent;
 import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.CyclicBehaviour;
 import sajas.core.behaviours.SimpleBehaviour;
-import sajas.core.behaviours.TickerBehaviour;
-import sajas.core.behaviours.WakerBehaviour;
 import sajas.domain.DFService;
 import tools.Tool;
 import uchicago.src.sim.gui.Drawable;
@@ -34,6 +33,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	public static final String ASSEMBLY_TASK = "1";
 	public static final String AQUISITION_TASK = "2";
 	public static final String TRANSPORT_TASK = "3";
+	public static final String PROTOCOL_FIXED_TASK = "Fixed Task";
+	public static final String PROTOCOL_TASK = "Normal Task";
 
 	int speed;
 	boolean fly;
@@ -297,6 +298,69 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 	}
+	
+	public class jobDone extends Behaviour {
+		
+		private String name;
+		private jade.core.AID requester;
+		public jobDone(Job j, String name, jade.core.AID requester) {
+			this.name = name;
+			this.requester = requester;
+		}
+		
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean done() {
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			msg.setContent("done");
+			msg.addReceiver(requester);
+			send(msg);
+			System.out.println("Fiz a tarefa " + name + " e enviei a confirmação");
+			return true;
+		}
+		
+	}
+	
+	public class RespondToFixedTask extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
+					MessageTemplate.not(MessageTemplate.MatchContent("done")));
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				//Verificar se vale a pena fazer ou não, se fizer mandar accept, se não mandar reject
+				ACLMessage reply = msg.createReply();
+				if (myAgent.getName().equals("Agente3@Transportes")) {
+					reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+					reply.setConversationId(reply.getConversationId());
+					send(reply);
+					System.out
+					.println("Sou o " + myAgent.getName() + " e enviei a confirmação de que ia tentar fazer a tarefa " + msg.getContent());
+					//criar job
+					Job b = null;
+					addBehaviour(new jobDone(b, msg.getConversationId(), msg.getSender()));
+				} else {
+					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+					reply.setConversationId(reply.getConversationId());
+					send(reply);
+					System.out
+					.println("Sou o " + myAgent.getName() + " e enviei um reject à tarefa de preço fixo " + msg.getContent());
+				}
+			} else {
+				block();
+			}
+
+		}
+
+	}
 
 	public class TaskConfirmation extends Behaviour {
 
@@ -326,6 +390,102 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 	}
+	
+	public class RequestTaskFixedPrice extends Behaviour {
+		
+		private static final long serialVersionUID = 1L;
+		private int numOfResponses = 0;
+		private int numAccepted = 0;
+		private int step;
+		private int price;
+		String request;
+		private boolean done = false;
+		private MessageTemplate mt;
+		
+		public RequestTaskFixedPrice(int price) {
+			this.price = price;
+			updateAgents();
+		}
+		
+		@Override
+		public void action() {
+			switch (step) {
+			case 0:
+				// Send the inform to all workers
+				System.out.println("Step 0 - Sending messages to agents fixed price");
+				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+				for (int i = 0; i < agents.length; i++) {
+					if (agents[i] != myAgent.getAID())
+						msg.addReceiver(agents[i]);
+				}
+				msg.setContent("Mesa Warehouse1 " + price);
+				request = "task-fixed-3";
+				msg.setConversationId(request);
+				msg.setReplyWith("msg-fixed" + System.currentTimeMillis());
+				send(msg);
+				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
+						MessageTemplate.MatchInReplyTo(msg.getReplyWith()));
+				step = 1;
+				break;
+			case 1:
+				ACLMessage reply = myAgent.receive(mt);
+				if (reply != null) {
+					// Reply received
+					System.out.println("Step1 - Reply received");
+					if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+						System.out.println("Recebi uma confirmação a dizer que o agente " + reply.getSender() + "vai tentar faze-la");
+						numAccepted++;
+						
+					}
+					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
+						System.out.println("Recebi uma rejeição a dizer que o agente " + reply.getSender() + "não vai fazer a tarefa");
+					}
+					numOfResponses++;
+					if (numOfResponses >= agents.length - 1) {
+						if(numAccepted == 0){
+							step = 3;
+							System.out.println("Everyone rejected the task");						}
+						else {
+							// We received all replies
+							System.out.println("Got an accept, waiting for task done inform...");
+							step = 2;
+							mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+									MessageTemplate.MatchContent("done"));
+						}
+					}
+				} else {
+					block();
+				}
+				break;
+			case 2:
+				System.out.println("Step 2");
+				reply = myAgent.receive(mt);
+				if (reply != null) {
+					//pagar ao cliente
+					//reply.getSender();
+					System.out.println("Paguei ao agente " + reply.getSender() + " " + price);
+					done = true;
+				}
+				else {
+					block();
+				}
+				break;
+			case 3:
+				//Cancelar, ninguém quis fazer a tarefa
+				System.out.println("Ninguém quis fazer a tarefa");
+				done = true;
+				break;
+			default:
+				break;
+			}
+		}
+
+		@Override
+		public boolean done() {
+			return done;
+		}
+		
+	}
 
 	public class RequestTask extends Behaviour {
 		private static final long serialVersionUID = 1L;
@@ -334,7 +494,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private jade.core.AID winnerWorker;
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
-		private long    timeout, wakeupTime;
+		private long timeout, wakeupTime;
 		String request;
 		private MessageTemplate mt;
 
@@ -548,9 +708,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		// cria behaviours
 
 		if(getLocalName().equals("Agente2")){
-			addBehaviour(new RequestTask());
+			addBehaviour(new RequestTaskFixedPrice(800));
 		}
 
+		addBehaviour(new RespondToFixedTask());
 		addBehaviour(new RespondToTask());
 	}
 
