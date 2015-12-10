@@ -28,7 +28,7 @@ import utils.Coord;
 import utils.DefaultHashMap;
 
 public abstract class Worker extends Agent implements Drawable, Holder {
-	
+
 	public static final String ASSEMBLY_TASK = "1";
 	public static final String AQUISITION_TASK = "2";
 	public static final String TRANSPORT_TASK = "3";
@@ -46,15 +46,35 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	Coord pos;
 	Object2DGrid space;
-	
-	public class Job extends SimpleBehaviour {
 
-	public Job parseJob(String content){
-		String[] tasksID = content.split("-");
-		return null;
+	public ArrayList<Job> parseJob(String id, String content){
 		
+		String[] tasksID = id.split("-");
+		String[] tasksSpecs = content.split("/");
+		ArrayList<Behaviour> tasks = new ArrayList<Behaviour>();
+		ArrayList<Job> jobs = new ArrayList<Job>();
+		for(int i = 1; i < tasksID.length;i++){
+			switch (tasksID[i]) {
+			case ASSEMBLY_TASK:
+				System.out.println(tasksID[i]+" -> "+tasksSpecs[i-1]);
+				break;
+			case AQUISITION_TASK:
+				System.out.println(tasksSpecs[i-1]);
+				break;
+			case TRANSPORT_TASK:
+				System.out.println(tasksID[i]+" -> "+tasksSpecs[i-1]);
+				break;
+
+			default:
+				break;
+			}
+		}
+		return null;
+
 	}
 	
+	public class Job extends SimpleBehaviour {
+		
 		private static final long serialVersionUID = 1L;
 
 		ArrayList<Behaviour> tasks;
@@ -72,7 +92,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			done = false;
 			step = 0;
 		}
-		
+
 		public int cost(){
 			return time;
 		}
@@ -235,23 +255,23 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				String content = msg.getContent();
 				System.out.println("Sou o " + myAgent.getName()
 				+ " e recebi uma msg com " + content);
-				
+
 				ACLMessage reply = msg.createReply();
-				
+
 				//analisar conteudo, ver se vale a pena fazer a tarefa
-				//parseJob(content);
+				parseJob(msg.getConversationId(),content);
 				if (myAgent.getName().equals("Agente3@Transportes")) {
 					reply.setContent("200");
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					System.out
-							.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
+					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
 					//addBehaviour(new TaskConfirmation());
 
 				} else {
 					reply.setContent("100");
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					System.out
-							.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
+					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
 					//addBehaviour(new TaskConfirmation());
 				}
 				send(reply);
@@ -323,11 +343,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mano, queres trabalhar?");
-				msg.setConversationId("task-request");
+				msg.setContent("assemble1 assemble2/trans1 trans2");
+				String request = "task-1-3";
+				msg.setConversationId(request);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
-				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("task-request"),
+				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
 						MessageTemplate.MatchInReplyTo(msg.getReplyWith()));
 				step = 1;
 				break;
