@@ -324,7 +324,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						msg.addReceiver(agents[i]);
 				}
 				msg.setContent("Mano, queres trabalhar?");
-				msg.setConversationId("task-1-3");
+				msg.setConversationId("task-request");
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
 				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("task-request"),
@@ -401,7 +401,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (reply.getPerformative() == ACLMessage.INFORM) {
 						// Task done
 						System.out.println("Task done!");
-						myAgent.doDelete();
 					}
 					step = 4;
 				} else {
@@ -431,8 +430,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		@Override
 		public boolean done() {
-			if(((step == 2 && winnerWorker == null) || step == 4))
-				System.out.println("ajshdbjavhabsdkjnsai");
 			return ((step == 2 && winnerWorker == null) || step == 4);
 		}
 
