@@ -18,14 +18,26 @@ public class Product {
 
 	static HashMap<String,  ProSpecs> productTypes = new HashMap<>();
 	
-	public class ProSpecs{
+	public static class ProSpecs{
 		public int weight;
 		public int price;
+		ArrayList<ProSpecs> materials;
 		public ProSpecs(int weight, int price) {
 			super();
 			this.weight = weight;
 			this.price = price;
+			this.materials = new ArrayList<>();
 		}
+		public ProSpecs(int weight,ArrayList<ProSpecs> ps) {
+			super();
+			this.weight = weight;
+			this.price = 0;
+			this.materials = ps;
+			for (ProSpecs proSpecs : ps) {
+				price += proSpecs.price;
+			}
+		}
+		
 	}
 	
 	
