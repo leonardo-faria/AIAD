@@ -18,7 +18,7 @@ public class Product {
 
 	static HashMap<String,  ProSpecs> productTypes = new HashMap<>();
 	
-	public class ProSpecs{
+	public static class ProSpecs{
 		public int weight;
 		public int price;
 		ArrayList<ProSpecs> materials;
