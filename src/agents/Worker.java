@@ -12,12 +12,15 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import javafx.util.Pair;
+import job.Job;
 import product.Product;
 import sajas.core.AID;
 import sajas.core.Agent;
 import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.CyclicBehaviour;
 import sajas.core.behaviours.SimpleBehaviour;
+import sajas.core.behaviours.TickerBehaviour;
+import sajas.core.behaviours.WakerBehaviour;
 import sajas.domain.DFService;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
@@ -26,6 +29,10 @@ import utils.Coord;
 import utils.DefaultHashMap;
 
 public abstract class Worker extends Agent implements Drawable, Holder {
+	
+	public static final String ASSEMBLY_TASK = "1";
+	public static final String AQUISITION_TASK = "2";
+	public static final String TRANSPORT_TASK = "3";
 
 	int speed;
 	boolean fly;
@@ -38,6 +45,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Coord pos;
 	Object2DGrid space;
 
+	public Job parseJob(String content){
+		String[] tasksID = content.split("-");
+		return null;
+		
+	}
+	
 	public class RespondToTask extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -48,22 +61,27 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					.MatchPerformative(ACLMessage.CFP);
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
+				String content = msg.getContent();
 				System.out.println("Sou o " + myAgent.getName()
-				+ " e recebi uma msg com " + msg.getContent());
+				+ " e recebi uma msg com " + content);
+				
 				ACLMessage reply = msg.createReply();
+				
+				//analisar conteudo, ver se vale a pena fazer a tarefa
+				parseJob(content);
 				if (myAgent.getName().equals("Agente3@Transportes")) {
 					reply.setContent("200");
-					reply.setPerformative(ACLMessage.PROPOSE);
+					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					System.out.println("Sou o " + myAgent.getName()
 					+ " e enviei uma proposta de " + reply.getContent());
-					addBehaviour(new TaskConfirmation());
+					//addBehaviour(new TaskConfirmation());
 
 				} else {
 					reply.setContent("100");
-					reply.setPerformative(ACLMessage.PROPOSE);
+					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					System.out.println("Sou o " + myAgent.getName()
 					+ " e enviei uma proposta de " + reply.getContent());
-					addBehaviour(new TaskConfirmation());
+					//addBehaviour(new TaskConfirmation());
 				}
 				send(reply);
 			} else {
@@ -114,6 +132,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private jade.core.AID winnerWorker;
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
+		private long    timeout, wakeupTime;
 		private MessageTemplate mt;
 
 		public RequestTask() {
@@ -122,8 +141,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			step = 0;
 			numOfResponses = 0;
 			updateAgents();
+			timeout = 500;
 		}
 
+		//TODO handle global rejection of auction
 		@Override
 		public void action() {
 			switch (step) {
@@ -136,7 +157,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						msg.addReceiver(agents[i]);
 				}
 				msg.setContent("Mano, queres trabalhar?");
-				msg.setConversationId("task-request");
+				msg.setConversationId("task-1-3");
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
 				mt = MessageTemplate
@@ -170,11 +191,18 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
-						// We received all replies
-						step = 2;
-						System.out.println("O agente "
-								+ winnerWorker.getName()
-								+ " ganhou com o preço " + bestPrice);
+						if(winnerWorker == null){
+							step = 5;
+							System.out.println("Everyone rejected the auction");
+							wakeupTime = System.currentTimeMillis() + timeout;
+						}
+						else {
+							// We received all replies
+							step = 2;
+							System.out.println("O agente "
+									+ winnerWorker.getName()
+									+ " ganhou com o preço " + bestPrice);
+						}
 					}
 				} else {
 					block();
@@ -223,6 +251,22 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					block();
 				}
 				break;
+			case 5:
+				step = 4;
+				//desisto, para ja cancela o leilao
+				//				long dt = wakeupTime - System.currentTimeMillis();
+				//				 if (dt <= 0) {
+				//			         System.out.println("oi");
+				//			      } else 
+				//			         block(dt);
+				//				bestPrice = Integer.MAX_VALUE;
+				//				rejectedAgents = new ArrayList<jade.core.AID>();
+				//				step = 0;
+				//				numOfResponses = 0;
+				//				updateAgents();
+
+
+				break;
 			default:
 				break;
 			}
@@ -230,6 +274,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		@Override
 		public boolean done() {
+			if(((step == 2 && winnerWorker == null) || step == 4))
+				System.out.println("ajshdbjavhabsdkjnsai");
 			return ((step == 2 && winnerWorker == null) || step == 4);
 		}
 
@@ -302,8 +348,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		// cria behaviours
 
-		if(getLocalName().equals("Agente2"))
+		if(getLocalName().equals("Agente2")){
 			addBehaviour(new RequestTask());
+		}
 
 		addBehaviour(new RespondToTask());
 	}
