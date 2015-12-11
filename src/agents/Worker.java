@@ -581,9 +581,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		String request;
 		private boolean done = false;
 		private MessageTemplate mt;
+		private String specs;
 
-		public RequestTaskFixedPrice(int price) {
+		public RequestTaskFixedPrice(int price, String type, String specs) {
 			this.price = price;
+			request = "fixed-" + type;
+			this.specs = specs;
 			updateAgents();
 		}
 
@@ -598,8 +601,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mesa Warehouse1 Warehouse2 " + price);
-				request = "task-3";
+				msg.setContent(specs +" "+ price);
 				msg.setConversationId(request);
 				msg.setReplyWith("msg-fixed" + System.currentTimeMillis());
 				send(msg);
@@ -676,14 +678,19 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
 		String request;
+		boolean failed;
 		private MessageTemplate mt;
+		private String specs;
 
-		public RequestTask() {
+		public RequestTask(String taskType,String specs) {
+			request = "auction-"+taskType;
 			bestPrice = Integer.MAX_VALUE;
 			rejectedAgents = new ArrayList<jade.core.AID>();
 			step = 0;
 			numOfResponses = 0;
+			failed = false;
 			updateAgents();
+			this.specs = specs;
 		}
 
 		@Override
@@ -697,8 +704,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent("Mesa Warehouse2 Warehouse1 8000");
-				request = "task-3";
+				msg.setContent(specs);
 				msg.setConversationId(request);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
@@ -707,7 +713,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				step = 1;
 				break;
 			case 1:
-
 				ACLMessage reply = myAgent.receive(mt);
 				if (reply != null) {
 					// Reply received
@@ -760,10 +765,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				send(rejection);
 
 				System.out.println(myAgent.getName() + " mandei a confirmação");
-//				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
-//						MessageTemplate.MatchInReplyTo(confirmation.getReplyWith()));
-				mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-						MessageTemplate.MatchContent("done"));
+				MessageTemplate temp = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+						MessageTemplate.MatchPerformative(ACLMessage.FAILURE));
+				MessageTemplate temp1 = MessageTemplate.MatchConversationId(request);
+				mt = MessageTemplate.and(temp, temp1);
 				step = 3;
 				break;
 			case 3:
@@ -771,29 +776,24 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				// Receive the confirmation when the task is done
 				reply = myAgent.receive(mt);
 				if (reply != null) {
-					// Confirmation received
 					if (reply.getPerformative() == ACLMessage.INFORM) {
 						// Task done
 						System.out.println("Task done!");
+						step = 4;
 					}
-					step = 4;
+					else {
+						// Task failed
+						System.out.println("Task failed!");
+						step = 5;
+					}
 				} else {
 					block();
 				}
 				break;
 			case 5:
+				//leilao falhou
+				failed = true;
 				step = 4;
-				// desisto, para ja cancela o leilao
-				// long dt = wakeupTime - System.currentTimeMillis();
-				// if (dt <= 0) {
-				// System.out.println("oi");
-				// } else
-				// block(dt);
-				// bestPrice = Integer.MAX_VALUE;
-				// rejectedAgents = new ArrayList<jade.core.AID>();
-				// step = 0;
-				// numOfResponses = 0;
-				// updateAgents();
 
 				break;
 			default:
