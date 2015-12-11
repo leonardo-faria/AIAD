@@ -20,7 +20,6 @@ import sajas.core.behaviours.Behaviour;
 import sajas.core.behaviours.CyclicBehaviour;
 import sajas.core.behaviours.SimpleBehaviour;
 import sajas.domain.DFService;
-import tools.Tool;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 import uchicago.src.sim.space.Object2DGrid;
@@ -36,6 +35,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	public static final String PROTOCOL_TASK = "Normal Task";
 
 	int speed;
+	private float probOfFailure;
 	boolean fly;
 	int charge;
 	int load;
@@ -46,9 +46,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	ArrayList<Product> stored;
 	ArrayList<Product> owned;
+	ArrayList<String> tools;
 
 	Coord pos;
 	Object2DGrid space;
+
+
 
 	public Job parseJob(ACLMessage msg){
 		Job proposed = null;
@@ -93,26 +96,35 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private static final long serialVersionUID = 1L;
 
 		ArrayList<Behaviour> tasks;
-		ArrayList<Tool> tools;
+		ArrayList<String> tools;
 		int maxtime=0;
-		int time;
+		int proposedTime, estimatedTime;
 		int step;
+		int distance;
 		boolean started;
 		private jade.core.AID requester;
 		boolean done;
 
-		public Job(ArrayList<Behaviour> tasks, ArrayList<Tool> tools, int time,jade.core.AID requester) {
+		public Job(ArrayList<Behaviour> tasks, ArrayList<String> tools, int time,jade.core.AID requester) {
 			this.tasks = tasks;
 			this.tools = tools;
-			this.time = time;
+			proposedTime = time;
 			this.requester = requester;
 			started = false;
 			done = false;
 			step = 0;
 		}
 
-		public int cost(){
-			return time;
+		public int getCost(){
+			int cost = 0;
+			estimatedTime = 0;
+			for(int i = 0; i < tools.size();i++){
+				if(!((Worker) myAgent).tools.contains(tools.get(i))){
+					estimatedTime += (distance / ((Worker) myAgent).probOfFailure * 1);
+				}
+			}
+
+			return cost;
 		}
 
 		@Override
@@ -141,7 +153,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			send(msg);
 			System.out.println("Fiz a tarefa e enviei a confirmação");
 			return maxtime;
-			
+
 		}
 
 	}
@@ -253,7 +265,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	public Job planTransport(Product p, Holder location, int charge, jade.core.AID requester) {
 		ArrayList<Behaviour> tasks = new ArrayList<Behaviour>();
-		ArrayList<Tool> tools = new ArrayList<Tool>();
+		ArrayList<String> tools = new ArrayList<String>();
 		if (p.getWeight() > this.maxload)
 			return null;
 		if (!stored.contains(p)) {
@@ -679,10 +691,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription();
-		sd.setName(getName());
-		sd.setType("Agente " + tipo);
-		dfd.addServices(sd);
+		for(int i = 0; i < tools.size(); i++){
+			ServiceDescription sd = new ServiceDescription();
+			sd.setOwnership(getLocalName());
+			sd.setName(tools.get(i));
+			sd.setType("tool");
+			dfd.addServices(sd);
+		}
 		try {
 			DFService.register(this, dfd);
 			updateAgents();
