@@ -53,9 +53,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Coord pos;
 	Object2DGrid space;
 
-
-
-	public Job parseJob(ACLMessage msg){
+	public Job parseJob(ACLMessage msg) {
 		Job proposed = null;
 		String[] tasksID = msg.getConversationId().split("-");
 		String[] specs = msg.getContent().split(" ");
@@ -134,7 +132,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private jade.core.AID requester;
 		boolean done;
 
-		public Job(ArrayList<Behaviour> tasks, ArrayList<String> tools, int time,jade.core.AID requester) {
+		public Job(ArrayList<Behaviour> tasks, ArrayList<String> tools, int time, jade.core.AID requester) {
 			this.tasks = tasks;
 			this.tools = tools;
 			proposedTime = time;
@@ -144,11 +142,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			step = 0;
 		}
 
-		public int getCost(){
+		public int getCost() {
 			int cost = 0;
 			estimatedTime = 0;
-			for(int i = 0; i < tools.size();i++){
-				if(!((Worker) myAgent).tools.contains(tools.get(i))){
+			for (int i = 0; i < tools.size(); i++) {
+				if (!((Worker) myAgent).tools.contains(tools.get(i))) {
 					estimatedTime += (distance / ((Worker) myAgent).probOfFailure * 1);
 				}
 			}
@@ -336,6 +334,89 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		tasks.add(createMoves(makeRoute(ps.seller, location.getCoord(), charge).getKey()));
 		tasks.add(new Drop(p, location));
 		return new Job(tasks, tools, 0, requester);
+	}
+
+	public Job planAssemble(ArrayList<String> tools, Coord location, jade.core.AID requester) {
+		ArrayList<Behaviour> tasks = new ArrayList<>();
+		ArrayList<String> myTools = new ArrayList<>();
+
+		tasks.add(createMoves(makeRoute(getCoord(), location, charge).getKey()));
+		if (!myTools.containsAll(tools)) {
+			ArrayList<String> missingTools = new ArrayList<String>();
+			for (String tool : tools)
+				if (!myTools.contains(tool)) {
+					missingTools.add(tool);
+				}
+			tasks.add(new RequestAssemble(missingTools));
+		}
+		// tasks.add(e)
+		return new Job(tasks, tools, 0, requester);
+	}
+
+	public class FullAssemble extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+		jade.core.AID requester;
+		Move myAssemble;
+		RequestAssemble requstedAssemble;
+		boolean started, done;
+
+		public FullAssemble(ArrayList<String> missingtools, Holder location, jade.core.AID req) {
+			myAssemble = createMoves(makeRoute(getCoord(), location.getCoord()).getKey());
+			if (missingtools.size() != 0)
+				requstedAssemble = new RequestAssemble(missingtools);
+			else
+				requstedAssemble = null;
+			started = false;
+			done = false;
+		}
+
+		@Override
+		public void action() {
+			if (!started) {
+				addBehaviour(myAssemble);
+				if (requstedAssemble != null)
+					addBehaviour(requstedAssemble);
+				started = true;
+			}
+			if (requstedAssemble != null) {
+				if (myAssemble.done() && requstedAssemble.done()) {
+					// tell requester assemble is done
+					done = true;
+				}
+			} else if (myAssemble.done()) {
+				// tell requester assemble is done
+				done = true;
+			}
+		}
+
+		@Override
+		public boolean done() {
+			return done;
+		}
+
+	}
+
+	public class RequestAssemble extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+
+		public RequestAssemble(ArrayList<String> tools) {
+			// TODO Auto-generated constructor stub
+		}
+
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
 	}
 
 	public class RespondToTask extends CyclicBehaviour {
@@ -745,7 +826,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
-		for(int i = 0; i < tools.size(); i++){
+		for (int i = 0; i < tools.size(); i++) {
 			ServiceDescription sd = new ServiceDescription();
 			sd.setOwnership(getLocalName());
 			sd.setName(tools.get(i));
