@@ -1,15 +1,16 @@
 package agents;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import javafx.util.Pair;
 import locals.Local;
 import main.Main;
@@ -223,7 +224,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			doneMsg.setPerformative(ACLMessage.INFORM);
 			doneMsg.setContent("done");
 			send(doneMsg);
-			System.out.println("Fiz a tarefa e enviei a confirmação");
+			System.out.println("I've done the task and sent the confirmation");
 			return 1;
 
 		}
@@ -314,7 +315,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		@Override
 		public void action() {
 			if (getCoord().equals(location)) {
-				System.out.println("charged");
+				System.out.println("I'm " + myAgent.getLocalName() + " and I just charged by battery");
 				fullCharge();
 				done = true;
 			}
@@ -495,7 +496,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				String content = msg.getContent();
-				System.out.println("Sou o " + myAgent.getName() + " e recebi uma msg com " + content);
+				System.out.println("I'm " + myAgent.getLocalName() + " and I received a message with " + content);
 
 				// Verificar se vale a pena fazer ou não, se fizer mandar
 				// accept, se não mandar reject
@@ -509,12 +510,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					reply.setConversationId(reply.getConversationId());
 					reply.setContent("" + cost);
 					System.out
-							.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
+					.println("I'm " + myAgent.getLocalName() + " and I sent a propose with the value " + reply.getContent());
 					addBehaviour(new TaskConfirmation());
 				} else {
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
-					System.out.println("Sou o " + myAgent.getLocalName() + " e enviei um reject à tarefa de leilao ");
+					System.out.println("I'm " + myAgent.getLocalName() + " and I rejected the task - " + content);
 				}
 				send(reply);
 			} else {
@@ -545,13 +546,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				if (cost <= proposedJob.maxtime) {
 					reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
-					System.out.println("Sou o " + myAgent.getName()
-							+ " e enviei a confirmação de que ia tentar fazer a tarefa " + msg.getContent());
+					System.out.println("I'm " + myAgent.getLocalName()
+					+ " and I sent a confirmation that I'll try to do the fixed price task - " + msg.getContent());
 					addBehaviour(proposedJob);
 				} else {
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
-					System.out.println("Sou o " + myAgent.getLocalName() + " e enviei um reject à tarefa de preço fixo "
+					System.out.println("I'm " + myAgent.getLocalName() + " and I sent a reject to the fixed price task - "
 							+ msg.getContent());
 				}
 				send(reply);
@@ -575,10 +576,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-					System.out.println("Fui aceite sou especial - " + myAgent.getLocalName());
+					System.out.println("My proposal was accepted - " + myAgent.getLocalName());
 					addBehaviour(proposedJob);
 				} else {
-					System.out.println("Lol caguei nem a queria - " + myAgent.getLocalName());
+					System.out.println("My proposal was refused - " + myAgent.getLocalName());
 				}
 				done = true;
 			} else {
@@ -635,14 +636,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					// Reply received
 					System.out.println("Step1 - Reply received");
 					if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-						System.out.println("Recebi uma confirmação a dizer que o agente " + reply.getSender()
-								+ "vai tentar faze-la");
+						System.out.println("Received a confirmation from " + reply.getSender()
+						+ ", he will try to do it");
 						numAccepted++;
 
 					}
 					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
-						System.out.println("Recebi uma rejeição a dizer que o agente " + reply.getSender()
-								+ "não vai fazer a tarefa");
+						System.out.println("Received a reject task from agent " + reply.getSender()
+						+ ", he ins't going to do the task");
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -667,7 +668,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				if (reply != null) {
 					// pagar ao cliente
 					// reply.getSender();
-					System.out.println("Paguei ao agente " + reply.getSender() + " " + price);
+					System.out.println("Payed " + price + "to the agent");
 					done = true;
 				} else {
 					block();
@@ -675,7 +676,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				break;
 			case 3:
 				// Cancelar, ninguém quis fazer a tarefa
-				System.out.println("Ninguém quis fazer a tarefa");
+				System.out.println("No one wanted to do the task");
 				done = true;
 				break;
 			default:
@@ -737,7 +738,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (reply.getPerformative() == ACLMessage.PROPOSE) {
 						// This is an offer
 						int price = Integer.parseInt(reply.getContent());
-						System.out.println("Recebi uma mensagem com a proposta de " + price);
+						System.out.println("I received a propose of " + price);
 						if (price < bestPrice) {
 							// This is the best offer at present
 							if (winnerWorker != null)
@@ -756,7 +757,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							// We received all replies
 							step = 2;
 							System.out
-									.println("O agente " + winnerWorker.getName() + " ganhou com o preço " + bestPrice);
+							.println("The agent " + winnerWorker.getLocalName() + " won with the value " + bestPrice);
 						}
 					}
 				} else {
@@ -766,7 +767,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			case 2:
 				// Send the confirmation to the worker that won the bid and
 				// rejections to all the rest
-				System.out.println("Step2 - Sending confirmation\n");
+				System.out.println("Step2 - Sending confirmation");
 				ACLMessage confirmation = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 				confirmation.addReceiver(winnerWorker);
 				confirmation.setContent("Ganhaste mano");
@@ -781,10 +782,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				rejection.setReplyWith("confirmation" + System.currentTimeMillis());
 				send(rejection);
 
-				System.out.println(myAgent.getName() + " mandei a confirmação");
-				// mt =
-				// MessageTemplate.and(MessageTemplate.MatchConversationId(request),
-				// MessageTemplate.MatchInReplyTo(confirmation.getReplyWith()));
+
+				System.out.println(myAgent.getLocalName() + " sent the confirmation");
+//				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
+//						MessageTemplate.MatchInReplyTo(confirmation.getReplyWith()));
 				mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
 						MessageTemplate.MatchContent("done"));
 				step = 3;
