@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import com.bbn.openmap.event.DistanceMouseMode;
+
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -54,19 +56,30 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Object2DGrid space;
 
 
-
-	public Job parseJob(ACLMessage msg){
+	public Job parseJob(ACLMessage msg) {
 		Job proposed = null;
 		Local l = null;
 		String[] tasksID = msg.getConversationId().split("-");
 		String[] specs = msg.getContent().split(" ");
 		switch (tasksID[1]) {
 		case ASSEMBLY_TASK:
-			// Formato_conteudo: Tipo_Produto Coord_X Coord_Y
-			proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])), msg.getSender());
+			// Formato_conteudo: f1-f2 Nome_Local Tempo
+			String[] t = specs[0].split("-");
+			ArrayList<String> tools = new ArrayList<>();
+			for(int i = 0; i < t.length;i++)
+				tools.add(t[i]);
+			
+			for (int i = 0; i < Main.locals.size(); i++) {
+				if (Main.locals.get(i).getName().equals(specs[1])) {
+					l = Main.locals.get(i);
+					break;
+				}
+			}
+			proposed = planAssemble(tools, l, msg.getSender());
+			proposed.maxtime = Integer.parseInt(specs[2]);			
 			break;
 		case AQUISITION_TASK:
-			// Formato_conteudo: Tipo_Produto Nome_Local1
+			// Formato_conteudo: Tipo_Produto Nome_Local1 Tempo
 			for (int i = 0; i < Main.locals.size(); i++) {
 				if (Main.locals.get(i).getName().equals(specs[1])) {
 					l = Main.locals.get(i);
@@ -74,17 +87,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 			}
 			proposed = planAquisition(specs[0], l, msg.getSender());
+			proposed.maxtime = Integer.parseInt(specs[2]);
 			break;
 		case TRANSPORT_TASK:
 			Product p = null;
 			// Formato_conteudo: Nome_Produto Nome_Local1 Nome_Local2 Tempo
 			for (int i = 0; i < Main.locals.size(); i++) {
 				if (Main.locals.get(i).getName().equals(specs[1])) {
-					p = new Product(specs[0], Main.locals.get(i)); // TODO mudar
-					// para
-					// lista d
-					// produtos
-
+					p = new Product(specs[0], Main.locals.get(i));
 				}
 				if (Main.locals.get(i).getName().equals(specs[2])) {
 					l = Main.locals.get(i);
@@ -142,7 +152,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private jade.core.AID requester;
 		boolean done;
 
-		public Job(ArrayList<Behaviour> tasks, ArrayList<String> tools, int time,jade.core.AID requester) {
+		public Job(ArrayList<Behaviour> tasks, ArrayList<String> tools, int time, jade.core.AID requester) {
 			this.tasks = tasks;
 			this.tools = tools;
 			proposedTime = time;
@@ -152,10 +162,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			step = 0;
 		}
 
-		public int getCost(){
+		public int getCost() {
 			estimatedTime = 0;
-			for(int i = 0; i < tools.size();i++){
-				if(!((Worker) myAgent).tools.contains(tools.get(i))){
+			for (int i = 0; i < tools.size(); i++) {
+				if (!((Worker) myAgent).tools.contains(tools.get(i))) {
 					estimatedTime += (distance / ((Worker) myAgent).probOfSuccess 
 							* (((Worker) myAgent).searchTool(tools.get(i)) / ((Worker) myAgent).searchTool(null)));
 				}
@@ -293,10 +303,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	}
 
-	public Job planAssemble(String productType, Coord location) {
-		return null;
-	}
-
 	public Job planTransport(Product p, Holder location, jade.core.AID requester) {
 		return planTransport(p, location, charge, requester);
 	}
@@ -306,19 +312,24 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		ArrayList<String> tools = new ArrayList<String>();
 		if (p.getWeight() > this.maxload)
 			return null;
+		int distance = 0;
 		if (!stored.contains(p)) {
 			if (!this.getCoord().equals(p.getLocation().getCoord())) {
 				Pair<Pair<LinkedList<Coord>, Coord>, Integer> route = makeRoute(getCoord(), p.getLocation().getCoord(),
 						charge);
 				tasks.add(createMoves(route.getKey()));
 				charge = route.getValue();
+				distance += route.getKey().getKey().size();
 			}
 			tasks.add(new Pickup(p, p.getLocation()));
 		}
-		tasks.add(createMoves(makeRoute(p.getLocation().getCoord(), location.getCoord(), charge).getKey()));
-		System.out.println(charge);
+		Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(p.getLocation().getCoord(), location.getCoord(),
+				charge);
+		tasks.add(createMoves(r.getKey()));
+
+		distance += r.getKey().getKey().size();
 		tasks.add(new Drop(p, location));
-		return new Job(tasks, tools, 0, requester);
+		return new Job(tasks, tools, distance, requester);
 	}
 
 	public Job planAquisition(String ptype, Holder location, jade.core.AID requester) {
@@ -333,17 +344,106 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			return null;
 		if (ps.price > this.credits)
 			return null;
+		int distance = 0;
 		if (!this.getCoord().equals(ps.seller)) {
 			Pair<Pair<LinkedList<Coord>, Coord>, Integer> route = makeRoute(getCoord(), ps.seller, charge);
 			tasks.add(createMoves(route.getKey()));
 			charge = route.getValue();
+			distance += route.getKey().getKey().size();
 		}
 		Product p = new Product(ptype, this);
 		tasks.add(new Buy(p.getCost()));
 		tasks.add(new Pickup(p, this));
-		tasks.add(createMoves(makeRoute(ps.seller, location.getCoord(), charge).getKey()));
+
+		Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(ps.seller, location.getCoord(), charge);
+		distance += r.getKey().getKey().size();
+		tasks.add(createMoves(r.getKey()));
 		tasks.add(new Drop(p, location));
-		return new Job(tasks, tools, 0, requester);
+		return new Job(tasks, tools, distance, requester);
+	}
+
+	public Job planAssemble(ArrayList<String> neededTools, Holder location, jade.core.AID requester) {
+		ArrayList<Behaviour> tasks = new ArrayList<>();
+		ArrayList<String> missingTools = new ArrayList<String>();
+
+		if (!tools.containsAll(neededTools)) {
+			for (String tool : neededTools)
+				if (!tools.contains(tool)) {
+					missingTools.add(tool);
+				}
+		}
+		FullAssemble fa = new FullAssemble(missingTools, location, requester);
+		tasks.add(fa);
+		return new Job(tasks, neededTools, fa.distance, requester);
+	}
+
+	public class FullAssemble extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+		jade.core.AID requester;
+		Move myAssemble;
+		RequestAssemble requstedAssemble;
+		boolean started, done;
+		int distance;
+
+		public FullAssemble(ArrayList<String> missingtools, Holder location, jade.core.AID req) {
+			Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(getCoord(), location.getCoord());
+			myAssemble = createMoves(r.getKey());
+			distance = r.getKey().getKey().size();
+			if (missingtools.size() != 0)
+				requstedAssemble = new RequestAssemble(missingtools);
+			else
+				requstedAssemble = null;
+			started = false;
+			done = false;
+		}
+
+		@Override
+		public void action() {
+			if (!started) {
+				addBehaviour(myAssemble);
+				if (requstedAssemble != null)
+					addBehaviour(requstedAssemble);
+				started = true;
+			}
+			if (requstedAssemble != null) {
+				if (myAssemble.done() && requstedAssemble.done()) {
+					// tell requester assemble is done
+					done = true;
+				}
+			} else if (myAssemble.done()) {
+				// tell requester assemble is done
+				done = true;
+			}
+		}
+
+		@Override
+		public boolean done() {
+			return done;
+		}
+
+	}
+
+	public class RequestAssemble extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+
+		public RequestAssemble(ArrayList<String> tools) {
+			// TODO Auto-generated constructor stub
+		}
+
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
 	}
 
 	public class RespondToTask extends CyclicBehaviour {
@@ -743,7 +843,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	protected void setup() {
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
-		for(int i = 0; i < tools.size(); i++){
+		for (int i = 0; i < tools.size(); i++) {
 			ServiceDescription sd = new ServiceDescription();
 			sd.setOwnership(getLocalName());
 			sd.setName(tools.get(i));
