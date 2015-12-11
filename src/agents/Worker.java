@@ -296,19 +296,24 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		ArrayList<String> tools = new ArrayList<String>();
 		if (p.getWeight() > this.maxload)
 			return null;
+		int distance = 0;
 		if (!stored.contains(p)) {
 			if (!this.getCoord().equals(p.getLocation().getCoord())) {
 				Pair<Pair<LinkedList<Coord>, Coord>, Integer> route = makeRoute(getCoord(), p.getLocation().getCoord(),
 						charge);
 				tasks.add(createMoves(route.getKey()));
 				charge = route.getValue();
+				distance += route.getKey().getKey().size();
 			}
 			tasks.add(new Pickup(p, p.getLocation()));
 		}
-		tasks.add(createMoves(makeRoute(p.getLocation().getCoord(), location.getCoord(), charge).getKey()));
-		System.out.println(charge);
+		Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(p.getLocation().getCoord(), location.getCoord(),
+				charge);
+		tasks.add(createMoves(r.getKey()));
+
+		distance += r.getKey().getKey().size();
 		tasks.add(new Drop(p, location));
-		return new Job(tasks, tools, 0, requester);
+		return new Job(tasks, tools, distance, requester);
 	}
 
 	public Job planAquisition(String ptype, Holder location, jade.core.AID requester) {
@@ -323,17 +328,22 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			return null;
 		if (ps.price > this.credits)
 			return null;
+		int distance = 0;
 		if (!this.getCoord().equals(ps.seller)) {
 			Pair<Pair<LinkedList<Coord>, Coord>, Integer> route = makeRoute(getCoord(), ps.seller, charge);
 			tasks.add(createMoves(route.getKey()));
 			charge = route.getValue();
+			distance += route.getKey().getKey().size();
 		}
 		Product p = new Product(ptype, this);
 		tasks.add(new Buy(p.getCost()));
 		tasks.add(new Pickup(p, this));
-		tasks.add(createMoves(makeRoute(ps.seller, location.getCoord(), charge).getKey()));
+		
+		Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(ps.seller, location.getCoord(), charge);
+		distance += r.getKey().getKey().size();
+		tasks.add(createMoves(r.getKey()));
 		tasks.add(new Drop(p, location));
-		return new Job(tasks, tools, 0, requester);
+		return new Job(tasks, tools, distance, requester);
 	}
 
 	public Job planAssemble(ArrayList<String> tools, Coord location, jade.core.AID requester) {
