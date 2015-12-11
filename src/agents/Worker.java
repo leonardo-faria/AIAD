@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import com.bbn.openmap.event.DistanceMouseMode;
+
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -338,7 +340,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		Product p = new Product(ptype, this);
 		tasks.add(new Buy(p.getCost()));
 		tasks.add(new Pickup(p, this));
-		
+
 		Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(ps.seller, location.getCoord(), charge);
 		distance += r.getKey().getKey().size();
 		tasks.add(createMoves(r.getKey()));
@@ -346,21 +348,19 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		return new Job(tasks, tools, distance, requester);
 	}
 
-	public Job planAssemble(ArrayList<String> tools, Coord location, jade.core.AID requester) {
+	public Job planAssemble(ArrayList<String> neededTools, Holder location, jade.core.AID requester) {
 		ArrayList<Behaviour> tasks = new ArrayList<>();
-		ArrayList<String> myTools = new ArrayList<>();
+		ArrayList<String> missingTools = new ArrayList<String>();
 
-		tasks.add(createMoves(makeRoute(getCoord(), location, charge).getKey()));
-		if (!myTools.containsAll(tools)) {
-			ArrayList<String> missingTools = new ArrayList<String>();
-			for (String tool : tools)
-				if (!myTools.contains(tool)) {
+		if (!tools.containsAll(neededTools)) {
+			for (String tool : neededTools)
+				if (!tools.contains(tool)) {
 					missingTools.add(tool);
 				}
-			tasks.add(new RequestAssemble(missingTools));
 		}
-		// tasks.add(e)
-		return new Job(tasks, tools, 0, requester);
+		FullAssemble fa = new FullAssemble(missingTools, location, requester);
+		tasks.add(fa);
+		return new Job(tasks, neededTools, fa.distance, requester);
 	}
 
 	public class FullAssemble extends Behaviour {
@@ -370,9 +370,12 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		Move myAssemble;
 		RequestAssemble requstedAssemble;
 		boolean started, done;
+		int distance;
 
 		public FullAssemble(ArrayList<String> missingtools, Holder location, jade.core.AID req) {
-			myAssemble = createMoves(makeRoute(getCoord(), location.getCoord()).getKey());
+			Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(getCoord(), location.getCoord());
+			myAssemble = createMoves(r.getKey());
+			distance = r.getKey().getKey().size();
 			if (missingtools.size() != 0)
 				requstedAssemble = new RequestAssemble(missingtools);
 			else
