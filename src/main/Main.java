@@ -18,6 +18,7 @@ import uchicago.src.sim.gui.Object2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
 import agents.CarAgent;
+import agents.DroneAgent;
 import agents.Wall;
 import agents.Worker;
 
@@ -32,7 +33,8 @@ public class Main extends Repast3Launcher {
 	private int worldXSize = 100;
 	private int worldYSize = 100;
 
-	CarAgent car1, car2, car3;
+	CarAgent car1, car2;
+	DroneAgent drone;
 	Wall wall;
 
 	DisplaySurface dsurf;
@@ -58,20 +60,17 @@ public class Main extends Repast3Launcher {
 			space = new Object2DGrid(worldXSize, worldYSize);
 			car1 = new CarAgent(new Coord(1, 1), space);
 			car2 = new CarAgent(new Coord(2, 5), space);
-			car3 = new CarAgent(new Coord(4, 5), space);
+			drone = new DroneAgent(new Coord(4, 5), space);
 			workerList.add(car1);
 			workerList.add(car2);
-			workerList.add(car3);
-			car1.setArguments(new String[] { "receiver" });
-			car2.setArguments(new String[] { "sender" });
-			car3.setArguments(new String[] { "receiver" });
+			workerList.add(drone);
 			agentContainer.acceptNewAgent("Agente1", car1).start();
-			agentContainer.acceptNewAgent("Agente3", car3).start();
+			agentContainer.acceptNewAgent("Agente3", drone).start();
 			agentContainer.acceptNewAgent("Agente2", car2).start();
 
 			scheduleAgent(car1);
 			scheduleAgent(car2);
-			scheduleAgent(car3);
+			scheduleAgent(drone);
 
 			locals = new ArrayList<>();
 			
@@ -81,7 +80,7 @@ public class Main extends Repast3Launcher {
 			Product p =new Product("p", car1);
 			p.setLocation(locals.get(1));
 			locals.get(0).pickup(p);
-			car1.addBehaviour(car1.planAquisition("p", locals.get(0), car2.getAID()));
+			//car1.addBehaviour(car1.planAquisition("p", locals.get(0), car2.getAID(),car1));
 		} catch (Exception e) {
 		}
 	}
