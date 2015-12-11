@@ -83,7 +83,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					break;
 				}
 			}
-			proposed = planAssemble(tools, l, msg.getSender());
+			proposed = planAssemble(tools, l);
 			proposed.maxtime = Integer.parseInt(specs[2]);	
 			break;
 		case AQUISITION_TASK:
@@ -377,7 +377,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		return j;
 	}
 
-	public Job planAssemble(ArrayList<String> neededTools, Holder location, jade.core.AID requester) {
+	public Job planAssemble(ArrayList<String> neededTools, Holder location) {
 		ArrayList<Behaviour> tasks = new ArrayList<>();
 		ArrayList<String> missingTools = new ArrayList<String>();
 
@@ -387,7 +387,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					missingTools.add(tool);
 				}
 		}
-		FullAssemble fa = new FullAssemble(missingTools, location, requester);
+		FullAssemble fa = new FullAssemble(missingTools, location);
 		tasks.add(fa);
 		Job j = new Job(tasks, tools, fa.distance);
 		j.distance = fa.distance;
@@ -403,7 +403,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		boolean started, done;
 		int distance;
 
-		public FullAssemble(ArrayList<String> missingtools, Holder location, jade.core.AID req) {
+		public FullAssemble(ArrayList<String> missingtools, Holder location) {
 			Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(getCoord(), location.getCoord());
 			myAssemble = createMoves(r.getKey());
 			distance = r.getKey().getKey().size();
@@ -425,11 +425,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			}
 			if (requstedAssemble != null) {
 				if (myAssemble.done() && requstedAssemble.done()) {
-					// tell requester assemble is done
 					done = true;
 				}
 			} else if (myAssemble.done()) {
-				// tell requester assemble is done
 				done = true;
 			}
 		}
