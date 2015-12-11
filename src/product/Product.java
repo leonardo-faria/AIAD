@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import agents.Holder;
 import agents.Worker;
 import javafx.util.Pair;
+import utils.Coord;
 
 public class Product {
 	String name;
@@ -21,13 +22,15 @@ public class Product {
 		public int weight;
 		public int price;
 		ArrayList<ProSpecs> materials;
-		public ProSpecs(int weight, int price) {
+		public Coord seller;
+		public ProSpecs(int weight, int price,Coord seller) {
 			super();
 			this.weight = weight;
 			this.price = price;
 			this.materials = new ArrayList<>();
+			this.seller =seller;
 		}
-		public ProSpecs(int weight,ArrayList<ProSpecs> ps) {
+		public ProSpecs(int weight,ArrayList<ProSpecs> ps,Coord seller) {
 			super();
 			this.weight = weight;
 			this.price = 0;
@@ -35,6 +38,7 @@ public class Product {
 			for (ProSpecs proSpecs : ps) {
 				price += proSpecs.price;
 			}
+			this.seller =seller;
 		}
 		
 	}
@@ -44,7 +48,7 @@ public class Product {
 	
 	public Product(String name, Holder location) {
 		if (!productTypes.containsKey(name))
-			productTypes.put(name, new ProSpecs(0, 0));
+			productTypes.put(name, new ProSpecs(0, 0, null));
 		this.name = name;
 		weight = productTypes.get(name).weight;
 		this.location = location;

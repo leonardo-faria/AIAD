@@ -77,11 +77,11 @@ public class Main extends Repast3Launcher {
 			
 			locals.add(new Warehouse(new Coord(50, 20),1));
 			locals.add(new Warehouse(new Coord(40, 40),2));
-			Product.addType("p", new ProSpecs(0, 0));
+			Product.addType("p", new ProSpecs(0, 0, new Coord(20, 20)));
 			Product p =new Product("p", car1);
 			p.setLocation(locals.get(1));
 			locals.get(0).pickup(p);
-			car1.addBehaviour(car1.planTransport(p, locals.get(0),car2.getAID()));
+			car1.addBehaviour(car1.planAquisition("p", locals.get(0), car2.getAID()));
 		} catch (Exception e) {
 		}
 	}
