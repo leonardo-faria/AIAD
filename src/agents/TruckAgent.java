@@ -1,20 +1,17 @@
 package agents;
 
-import credit.Credit;
-import sajas.core.Agent;
-import tools.Tool;
+import uchicago.src.sim.space.Object2DGrid;
+import utils.Coord;
 
 public class TruckAgent extends Worker {
 
-	private static int VELOCITY = 1;
-	private static boolean ROAD = true; //true estrada, false ar
-	private static int BATTERY_CAPACITY = 3000;
-	private static int LOAD_CAPACITY = 1000;
-	private static Tool f2;
-	private static Tool f3;
-	
-	private Credit credit;
-	private int batteryLeft;
-	private int loadLeft;
-	private int position[];
+	public TruckAgent(Coord c, Object2DGrid space) {
+		super(c, space);
+		charge = 10;
+		maxCharge = 3000;
+		speed = 5;
+		maxload = 1000;
+		tools.add("2");
+		tools.add("3");
+	}	
 }

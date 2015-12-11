@@ -36,7 +36,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	public static final String PROTOCOL_TASK = "Normal Task";
 
 	int speed;
-	private float probOfFailure;
+	private float probOfSuccess;
 	boolean fly;
 	int charge;
 	int load;
@@ -57,26 +57,33 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	public Job parseJob(ACLMessage msg){
 		Job proposed = null;
+		Local l = null;
 		String[] tasksID = msg.getConversationId().split("-");
 		String[] specs = msg.getContent().split(" ");
 		switch (tasksID[1]) {
 		case ASSEMBLY_TASK:
 			// Formato_conteudo: Tipo_Produto Coord_X Coord_Y
-			proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])));
+			proposed = planAssemble(specs[0], new Coord(Integer.parseInt(specs[1]), Integer.parseInt(specs[2])), msg.getSender());
 			break;
 		case AQUISITION_TASK:
-
+			// Formato_conteudo: Tipo_Produto Nome_Local1
+			for (int i = 0; i < Main.locals.size(); i++) {
+				if (Main.locals.get(i).getName().equals(specs[1])) {
+					l = Main.locals.get(i);
+					break;
+				}
+			}
+			proposed = planAquisition(specs[0], l, msg.getSender());
 			break;
 		case TRANSPORT_TASK:
 			Product p = null;
-			Local l = null;
 			// Formato_conteudo: Nome_Produto Nome_Local1 Nome_Local2 Tempo
 			for (int i = 0; i < Main.locals.size(); i++) {
 				if (Main.locals.get(i).getName().equals(specs[1])) {
 					p = new Product(specs[0], Main.locals.get(i)); // TODO mudar
-																	// para
-																	// lista d
-																	// produtos
+					// para
+					// lista d
+					// produtos
 
 				}
 				if (Main.locals.get(i).getName().equals(specs[2])) {
@@ -130,6 +137,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		int proposedTime, estimatedTime;
 		int step;
 		int distance;
+		int creditsSpent;
 		boolean started;
 		private jade.core.AID requester;
 		boolean done;
@@ -145,15 +153,15 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 		public int getCost(){
-			int cost = 0;
 			estimatedTime = 0;
 			for(int i = 0; i < tools.size();i++){
 				if(!((Worker) myAgent).tools.contains(tools.get(i))){
-					estimatedTime += (distance / ((Worker) myAgent).probOfFailure * 1);
+					estimatedTime += (distance / ((Worker) myAgent).probOfSuccess 
+							* (((Worker) myAgent).searchTool(tools.get(i)) / ((Worker) myAgent).searchTool(null)));
 				}
 			}
+			return distance * ((Worker) myAgent).speed + creditsSpent + estimatedTime;
 
-			return cost;
 		}
 
 		@Override
@@ -358,14 +366,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					reply.setContent("50");
 					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out
-							.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
+					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
 					addBehaviour(new TaskConfirmation());
 
 				} else {
 					reply.setContent("100");
 					reply.setPerformative(ACLMessage.PROPOSE);
 					System.out
-							.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
+					.println("Sou o " + myAgent.getName() + " e enviei uma proposta de " + reply.getContent());
 					addBehaviour(new TaskConfirmation());
 				}
 				send(reply);
@@ -395,16 +403,16 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					reply.setConversationId(reply.getConversationId());
 					send(reply);
 					System.out.println("Sou o " + myAgent.getName()
-							+ " e enviei a confirmação de que ia tentar fazer a tarefa " + msg.getContent());
+					+ " e enviei a confirmação de que ia tentar fazer a tarefa " + msg.getContent());
 					// criar job
 					Job b = parseJob(msg);
 
-					// addBehaviour(b);
+					addBehaviour(b);
 				} else {
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
 					send(reply);
-					System.out.println("Sou o " + myAgent.getName() + " e enviei um reject à tarefa de preço fixo "
+					System.out.println("Sou o " + myAgent.getLocalName() + " e enviei um reject à tarefa de preço fixo "
 							+ msg.getContent());
 				}
 			} else {
@@ -487,13 +495,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					System.out.println("Step1 - Reply received");
 					if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
 						System.out.println("Recebi uma confirmação a dizer que o agente " + reply.getSender()
-								+ "vai tentar faze-la");
+						+ "vai tentar faze-la");
 						numAccepted++;
 
 					}
 					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
 						System.out.println("Recebi uma rejeição a dizer que o agente " + reply.getSender()
-								+ "não vai fazer a tarefa");
+						+ "não vai fazer a tarefa");
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -548,7 +556,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private jade.core.AID winnerWorker;
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
-		private long timeout, wakeupTime;
 		String request;
 		private MessageTemplate mt;
 
@@ -558,7 +565,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			step = 0;
 			numOfResponses = 0;
 			updateAgents();
-			timeout = 500;
 		}
 
 		// TODO handle global rejection of auction
@@ -606,12 +612,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						if (winnerWorker == null) {
 							step = 5;
 							System.out.println("Everyone rejected the auction");
-							wakeupTime = System.currentTimeMillis() + timeout;
 						} else {
 							// We received all replies
 							step = 2;
 							System.out
-									.println("O agente " + winnerWorker.getName() + " ganhou com o preço " + bestPrice);
+							.println("O agente " + winnerWorker.getName() + " ganhou com o preço " + bestPrice);
 						}
 					}
 				} else {
@@ -732,17 +737,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		this.space = space;
 		stored = new ArrayList<>();
 		owned = new ArrayList<>();
+		tools = new ArrayList<>();
 	}
 
 	protected void setup() {
-		String tipo = "";
-		Object[] args = getArguments();
-		if (args != null && args.length > 0) {
-			tipo = (String) args[0];
-		} else {
-			System.out.println("Não especificou o tipo");
-		}
-
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		for(int i = 0; i < tools.size(); i++){
@@ -754,7 +752,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 		try {
 			DFService.register(this, dfd);
-			updateAgents();
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
@@ -769,11 +766,25 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		addBehaviour(new RespondToTask());
 	}
 
+	private int searchTool(String name){
+		DFAgentDescription dfd = new DFAgentDescription();
+		ServiceDescription sd  = new ServiceDescription();
+		sd.setType("tool");
+		if(name != null)
+			sd.setName(name);
+		dfd.addServices(sd);
+		try {
+			DFAgentDescription[] result = DFService.search(this, dfd);
+			return result.length;
+		} catch (FIPAException e) {
+			e.printStackTrace();
+			return 0;
+		}
+	}
+
 	private void updateAgents() {
 		// Update the list of seller agents
 		DFAgentDescription dfd = new DFAgentDescription();
-		ServiceDescription sd = new ServiceDescription();
-		dfd.addServices(sd);
 		try {
 			DFAgentDescription[] result = DFService.search(this, dfd);
 			agents = new AID[result.length];

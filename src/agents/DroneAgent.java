@@ -1,19 +1,16 @@
 package agents;
 
-import credit.Credit;
-import sajas.core.Agent;
-import tools.Tool;
+import uchicago.src.sim.space.Object2DGrid;
+import utils.Coord;
 
 public class DroneAgent extends Worker {
 
-	private static int VELOCITY = 5;
-	private static boolean ROAD = false; //true estrada, false ar
-	private static int BATTERY_CAPACITY = 250;
-	private static int LOAD_CAPACITY = 100;
-	private static Tool f1;
-	
-	private Credit credit;
-	private int batteryLeft;
-	private int loadLeft;
-	private int position[];
+	public DroneAgent(Coord c, Object2DGrid space) {
+		super(c, space);
+		charge = 10;
+		maxCharge = 250;
+		speed = 1;
+		maxload = 100;
+		tools.add("1");
+	}	
 }
