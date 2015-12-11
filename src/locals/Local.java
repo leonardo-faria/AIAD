@@ -34,6 +34,7 @@ public class Local implements Holder {
 		return pos;
 	}
 	
+	@Override
 	public String getName(){
 		return type + id;
 	}

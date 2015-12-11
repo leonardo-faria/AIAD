@@ -1,16 +1,15 @@
 package agents;
 
-import jade.domain.FIPAException;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
-
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import javafx.util.Pair;
 import locals.Local;
 import main.Main;
@@ -175,8 +174,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			payoff=pay;
 		}
 
-		
-		
+
+
 		@Override
 		public void onStart() {
 			super.onStart();
@@ -413,38 +412,47 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private static final long serialVersionUID = 1L;
 		jade.core.AID requester;
 		Move myAssemble;
-		RequestAssemble requstedAssemble;
+		ArrayList<String> missingtools;
 		boolean started, done;
 		int distance;
 		int payoff;
+		Holder location;
+		Behaviour requestAssemble;
 		int fine;
 
 		public FullAssemble(ArrayList<String> missingtools, Holder location) {
 			Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(getCoord(), location.getCoord());
 			myAssemble = createMoves(r.getKey());
 			distance = r.getKey().getKey().size();
-			if (missingtools.size() != 0)
-				requstedAssemble = new RequestAssemble(missingtools);
-			else
-				requstedAssemble = null;
+			this.missingtools = missingtools;
+			this.location = location;
 			started = false;
 			done = false;
+			requestAssemble = null;
 		}
-
+		
 		@Override
 		public void action() {
 			if (!started) {
 				addBehaviour(myAssemble);
-				if (requstedAssemble != null)
-					addBehaviour(requstedAssemble);
+				if (missingtools.size() > 0){
+					String t = "";
+					for(int i = 0; i < missingtools.size(); i++){
+						t += missingtools.get(i);
+						if(i != missingtools.size()-1)
+							t += "-";
+					}
+					requestAssemble = new RequestTask(Worker.ASSEMBLY_TASK, t + " " + location.getName(), 0);
+					addBehaviour(requestAssemble);
+				}
 				started = true;
 			}
-			if (requstedAssemble != null) {
-				if (requstedAssemble.failed()) {
+			if (requestAssemble != null) {
+				if (((RequestTask)requestAssemble).failed) {
 					myAssemble.stop();
 					done = true;
 					credits -= (payoff + fine);
-				} else if (myAssemble.done() && requstedAssemble.done()) {
+				} else if (myAssemble.done() && requestAssemble.done()) {
 					done = true;
 				}
 			} else if (myAssemble.done()) {
@@ -455,33 +463,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		@Override
 		public boolean done() {
 			return done;
-		}
-
-	}
-
-	public class RequestAssemble extends Behaviour {
-
-		private static final long serialVersionUID = 1L;
-
-		public RequestAssemble(ArrayList<String> tools) {
-			// TODO Auto-generated constructor stub
-		}
-
-		public boolean failed() {
-			// TODO Auto-generated method stub
-			return false;
-		}
-
-		@Override
-		public void action() {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public boolean done() {
-			// TODO Auto-generated method stub
-			return false;
 		}
 
 	}
@@ -606,7 +587,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private MessageTemplate mt;
 		private String specs;
 
-		public RequestTaskFixedPrice(int price, String type, String specs) {
+		public RequestTaskFixedPrice(String type, String specs,int price) {
 			this.price = price;
 			request = "fixed-" + type;
 			this.specs = specs;
@@ -624,8 +605,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
+				
 				msg.setContent(specs +" "+ price);
 				msg.setConversationId(request);
+				if(price == 0){
+					proposedJob = parseJob(msg, myAgent.getAID());
+					price = proposedJob.getCost();
+				}
+				msg.setContent(specs +" "+ price);
 				msg.setReplyWith("msg-fixed" + System.currentTimeMillis());
 				send(msg);
 				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
@@ -703,9 +690,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		String request;
 		boolean failed;
 		private MessageTemplate mt;
+		private int proposedTime;
 		private String specs;
 
-		public RequestTask(String taskType,String specs) {
+		public RequestTask(String taskType,String specs, int proposedTime) {
 			request = "auction-"+taskType;
 			bestPrice = Integer.MAX_VALUE;
 			rejectedAgents = new ArrayList<jade.core.AID>();
@@ -714,6 +702,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			failed = false;
 			updateAgents();
 			this.specs = specs;
+			this.proposedTime = proposedTime;
 		}
 
 		@Override
@@ -727,8 +716,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (agents[i] != myAgent.getAID())
 						msg.addReceiver(agents[i]);
 				}
-				msg.setContent(specs);
 				msg.setConversationId(request);
+				msg.setContent(specs + " " + proposedTime);
+				if(proposedTime == 0){
+					proposedJob = parseJob(msg, myAgent.getAID());
+					proposedTime = proposedJob.getCost();
+				}
+				msg.setContent(specs + " " + proposedTime);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
 				send(msg);
 				mt = MessageTemplate.and(MessageTemplate.MatchConversationId(request),
@@ -855,7 +849,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		public void stop() {
 			stoped=true;
-			
+
 		}
 
 		@Override
@@ -911,7 +905,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		// cria behaviours
 
 		if (getLocalName().equals("Agente2")) {
-			addBehaviour(new RequestTask());
+			addBehaviour(new RequestTask("3", "Mesa Warehouse1 Warehouse2", 0));
 			// addBehaviour(new RequestTaskFixedPrice(300));
 		}
 
