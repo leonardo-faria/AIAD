@@ -9,4 +9,6 @@ public interface Holder {
 	public void drop(Product p);
 
 	public Coord getCoord();
+	
+	public String getName();
 }
