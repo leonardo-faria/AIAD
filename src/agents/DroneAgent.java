@@ -11,6 +11,6 @@ public class DroneAgent extends Worker {
 		maxCharge = 250;
 		speed = 1;
 		maxload = 100;
-		tools.add("1");
+		tools.add("3");
 	}	
 }

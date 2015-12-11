@@ -80,7 +80,10 @@ public class Main extends Repast3Launcher {
 			Product p =new Product("p", car1);
 			p.setLocation(locals.get(1));
 			locals.get(0).pickup(p);
-			//car1.addBehaviour(car1.planAquisition("p", locals.get(0), car2.getAID(),car1));
+			ArrayList<String> tools=new ArrayList<>();
+			tools.add("1");
+			tools.add("3");
+			car1.addBehaviour(car1.planAssemble(tools, locals.get(0)));
 		} catch (Exception e) {
 		}
 	}
