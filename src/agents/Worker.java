@@ -487,16 +487,23 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				ACLMessage reply = msg.createReply();
 				// criar job
 				proposedJob = parseJob(msg, myAgent.getAID());
-				int cost = proposedJob.getCost();
-				System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
-				if (cost <= proposedJob.maxtime) {
-					reply.setPerformative(ACLMessage.PROPOSE);
-					reply.setConversationId(reply.getConversationId());
-					reply.setContent("" + cost);
-					System.out.println("I'm " + myAgent.getLocalName() + " and I sent a propose with the value "
-							+ reply.getContent());
-					addBehaviour(new TaskConfirmation());
-				} else {
+				if(proposedJob != null && !((Worker)myAgent).ongoingJob ){
+					int cost = proposedJob.getCost();
+					System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
+					if (cost <= proposedJob.maxtime) {
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setConversationId(reply.getConversationId());
+						reply.setContent("" + cost);
+						System.out.println("I'm " + myAgent.getLocalName() + " and I sent a propose with the value "
+								+ reply.getContent());
+						addBehaviour(new TaskConfirmation());
+					} else {
+						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+						reply.setConversationId(reply.getConversationId());
+						System.out.println("I'm " + myAgent.getLocalName() + " and I rejected the task - " + content);
+					}
+				}
+				else{
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
 					System.out.println("I'm " + myAgent.getLocalName() + " and I rejected the task - " + content);
@@ -525,20 +532,28 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				ACLMessage reply = msg.createReply();
 				// criar job
 				proposedJob = parseJob(msg, myAgent.getAID());
-				int cost = proposedJob.getCost();
-				System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
-				if (cost <= proposedJob.maxtime) {
-					reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-					reply.setConversationId(reply.getConversationId());
-					System.out.println("I'm " + myAgent.getLocalName()
-							+ " and I sent a confirmation that I'll try to do the fixed price task - "
-							+ msg.getContent());
-					addBehaviour(proposedJob);
-				} else {
+				if(proposedJob != null && !((Worker)myAgent).ongoingJob){
+					int cost = proposedJob.getCost();
+					System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
+					if (cost <= proposedJob.maxtime) {
+						reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+						reply.setConversationId(reply.getConversationId());
+						System.out.println("I'm " + myAgent.getLocalName()
+						+ " and I sent a confirmation that I'll try to do the fixed price task - "
+						+ msg.getContent());
+						addBehaviour(proposedJob);
+					} else {
+						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+						reply.setConversationId(reply.getConversationId());
+						System.out.println("I'm " + myAgent.getLocalName()
+						+ " and I sent a reject to the fixed price task - " + msg.getContent());
+					}
+				}
+				else{
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
 					System.out.println("I'm " + myAgent.getLocalName()
-							+ " and I sent a reject to the fixed price task - " + msg.getContent());
+					+ " and I sent a reject to the fixed price task - " + msg.getContent());
 				}
 				send(reply);
 			} else {
@@ -636,7 +651,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					}
 					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
 						System.out.println("Received a reject task from agent " + reply.getSender()
-								+ ", he ins't going to do the task");
+						+ ", he ins't going to do the task");
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -724,6 +739,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				msg.setContent(specs + " " + proposedTime);
 				if (proposedTime == 0) {
 					proposedJob = parseJob(msg, myAgent.getAID());
+					if(proposedJob == null)
+						System.out.println("cenas");
 					proposedTime = proposedJob.getCost();
 				}
 				msg.setContent(specs + " " + proposedTime);
