@@ -755,8 +755,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
                 probOfSuccess += (1 - rejectPercent)
                     * LEARNING_RATE * (1 - probOfSuccess);
               } else
-                probOfSuccess -= rejectPercent * LEARNING_RATE
-                * (1 - probOfSuccess);
+                probOfSuccess -= (1 - rejectPercent)
+                	* LEARNING_RATE * (1 - probOfSuccess);
 
               System.out.println("\n" + probOfSuccess + "\n");
               System.out
@@ -908,11 +908,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
               float rejectPercent = numRejectedNotBusy
                   / (numProposes + numBusy);
               if (rejectPercent < 0.5) {
-                probOfSuccess += (1 - rejectPercent)
-                    * LEARNING_RATE * (1 - probOfSuccess);
-              } else
-                probOfSuccess -= rejectPercent * LEARNING_RATE
-                * (1 - probOfSuccess);
+                  probOfSuccess += (1 - rejectPercent)
+                      * LEARNING_RATE * (1 - probOfSuccess);
+                } else
+                  probOfSuccess -= (1 - rejectPercent)
+                  	* LEARNING_RATE * (1 - probOfSuccess);
               System.out.println("\n" + probOfSuccess + "\n");
               System.out.println("The agent "
                   + winnerWorker.getLocalName()
