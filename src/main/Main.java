@@ -81,6 +81,9 @@ public class Main extends Repast3Launcher {
 			workerList.add(car2);
 			workerList.add(drone);
 			workerList.add(truck);
+			locals = new ArrayList<>();
+			locals.add(new Warehouse(new Coord(50, 20), 1));
+			locals.add(new Warehouse(new Coord(40, 40), 2));
 			agentContainer.acceptNewAgent("Agente2", car1).start();
 			agentContainer.acceptNewAgent("Agente3", drone).start();
 			agentContainer.acceptNewAgent("Agente4", truck).start();
@@ -91,10 +94,6 @@ public class Main extends Repast3Launcher {
 			scheduleAgent(drone);
 			scheduleAgent(truck);
 
-			locals = new ArrayList<>();
-
-			locals.add(new Warehouse(new Coord(50, 20), 1));
-			locals.add(new Warehouse(new Coord(40, 40), 2));
 			Product.addType("p", new ProSpecs(0, 0, new Coord(20, 20)));
 			Product p = new Product("p", car1);
 			p.setLocation(locals.get(1));
