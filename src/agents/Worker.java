@@ -44,6 +44,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	int maxCharge;
 	int maxload;
 	int credits;
+	int prevDistance;
 	private jade.core.AID[] agents;
 	Job proposedJob;
 	Behaviour requestedJob;
@@ -127,6 +128,18 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 	}
 
+	public int getCost(ArrayList<String> reqTools, int distance) {
+		int estimatedTime = 0;
+		for (int i = 0; i < reqTools.size(); i++) {
+			if (!tools.contains(reqTools.get(i))) {
+				estimatedTime += (distance / 
+						(probOfSuccess	* 
+								(searchTool(tools.get(i)) / searchTool(null))));
+			}
+		}
+		return distance * speed + estimatedTime;
+	}
+
 	public class Buy extends SimpleBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -159,7 +172,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		ArrayList<String> tools;
 		int payoff;
 		int maxtime;
-		int proposedTime, estimatedTime;
+		int proposedTime;
+		int estimatedTime;
 		int step;
 		int distance;
 		int creditsSpent = 0;
@@ -189,12 +203,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			estimatedTime = 0;
 			for (int i = 0; i < tools.size(); i++) {
 				if (!provider.tools.contains(tools.get(i))) {
-					estimatedTime += (distance / provider.probOfSuccess
-							* (provider.searchTool(tools.get(i)) / provider.searchTool(null)));
+					estimatedTime += (distance / 
+							(provider.probOfSuccess	* 
+									(provider.searchTool(tools.get(i)) / provider.searchTool(null))));
 				}
 			}
+			provider.prevDistance = distance;
 			return distance * provider.speed + creditsSpent + estimatedTime;
-
 		}
 
 		@Override
@@ -405,7 +420,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			return null;
 		FullAssemble fa = new FullAssemble(missingTools, location);
 		tasks.add(fa);
-		Job j = new Job(tasks, tools, fa.distance, 0);// TODO PAYOFF
+		Job j = new Job(tasks, neededTools, fa.distance, 0);// TODO PAYOFF
 		j.distance = fa.distance;
 		return j;
 	}
@@ -426,6 +441,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		public FullAssemble(ArrayList<String> missingtools, Holder location) {
 			Pair<Pair<LinkedList<Coord>, Coord>, Integer> r = makeRoute(getCoord(), location.getCoord());
 			myAssemble = createMoves(r.getKey());
+			//planear pedir a outro
+			//distance = max(pedir a outro, meu distance);
 			distance = r.getKey().getKey().size();
 			this.missingtools = missingtools;
 			this.location = location;
@@ -729,7 +746,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			switch (step) {
 			case 0:
 				// Send the cfp to all workers
-				System.out.println("Step 0 - Sending messages to agents");
+				System.out.println("Step 0 - " + myAgent.getLocalName() + "Sending messages to agents");
 				ACLMessage msg = new ACLMessage(ACLMessage.CFP);
 				for (int i = 0; i < agents.length; i++) {
 					if (agents[i] != myAgent.getAID())
@@ -739,9 +756,16 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				msg.setContent(specs + " " + proposedTime);
 				if (proposedTime == 0) {
 					proposedJob = parseJob(msg, myAgent.getAID());
-					if(proposedJob == null)
-						System.out.println("cenas");
-					proposedTime = proposedJob.getCost();
+					if(proposedJob == null){
+						String[] temp = specs.split(" ");
+						String[] t = temp[0].split("-");
+						ArrayList<String> temp2 = new ArrayList<>();
+						for (int i = 0; i < t.length; i++)
+							temp2.add(t[i]);
+						proposedTime = getCost(temp2, ((Worker) myAgent).prevDistance);
+					}
+					else
+						proposedTime = proposedJob.getCost();
 				}
 				msg.setContent(specs + " " + proposedTime);
 				msg.setReplyWith("msg" + System.currentTimeMillis());
@@ -903,6 +927,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		owned = new ArrayList<>();
 		tools = new ArrayList<>();
 		probOfSuccess = 0.5;
+		prevDistance = 0;
 	}
 
 	protected void setup() {
@@ -923,9 +948,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		// cria behaviours
 
-		if (getLocalName().equals("Agente2")) {
-			// addBehaviour(new RequestTask("3", "Mesa Warehouse1 Warehouse2",
-			// 0));
+		if (getLocalName().equals("Agente1")) {
+			addBehaviour(new RequestTask("1", "1-3 Warehouse1", 0));
 			// addBehaviour(new RequestTaskFixedPrice(300));
 		}
 
@@ -933,7 +957,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		addBehaviour(new RespondToTask());
 	}
 
-	private int searchTool(String name) {
+	private float searchTool(String name) {
 		DFAgentDescription dfd = new DFAgentDescription();
 		ServiceDescription sd = new ServiceDescription();
 		sd.setType("tool");

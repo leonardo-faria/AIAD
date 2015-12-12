@@ -64,9 +64,9 @@ public class Main extends Repast3Launcher {
 			workerList.add(car1);
 			workerList.add(car2);
 			workerList.add(drone);
-			agentContainer.acceptNewAgent("Agente1", car1).start();
+			agentContainer.acceptNewAgent("Agente2", car1).start();
 			agentContainer.acceptNewAgent("Agente3", drone).start();
-			agentContainer.acceptNewAgent("Agente2", car2).start();
+			agentContainer.acceptNewAgent("Agente1", car2).start();
 
 			scheduleAgent(car1);
 			scheduleAgent(car2);
@@ -83,7 +83,7 @@ public class Main extends Repast3Launcher {
 			ArrayList<String> tools=new ArrayList<>();
 			tools.add("1");
 			tools.add("3");
-			car1.addBehaviour(car1.planAssemble(tools, locals.get(0)));
+			//car1.addBehaviour(car1.planAssemble(tools, locals.get(0)));
 		} catch (Exception e) {
 		}
 	}
