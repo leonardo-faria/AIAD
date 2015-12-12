@@ -1,15 +1,16 @@
 package agents;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import javafx.util.Pair;
 import locals.Local;
 import main.Main;
@@ -53,6 +54,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	ArrayList<Product> owned;
 	ArrayList<String> tools;
 
+	enum jobTypes {ASSEMBLY_TASK, AQUISITION_TASK, TRANSPORT_TASK};
+	HashMap<jobTypes, ArrayList<Integer>> pastJobs = new HashMap<jobTypes, ArrayList<Integer>>();
+	
 	Coord pos;
 	Object2DGrid space;
 
@@ -85,6 +89,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			proposed = planAssemble(tools, l);
 			if (proposed != null)
 				proposed.maxtime = Integer.parseInt(specs[2]);
+
 			break;
 		case AQUISITION_TASK:
 			// Formato_conteudo: Tipo_Produto Nome_Local1 Tempo
@@ -523,7 +528,23 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				else{
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
-					System.out.println("I'm " + myAgent.getLocalName() + " and I rejected the task - " + content);
+					boolean ongoingJob = false;
+					for (int i = 0; i < Main.workerList.size(); i++)
+						if (Main.workerList.get(i).getAID() == myAgent.getAID()) {
+							ongoingJob = Main.workerList.get(i).ongoingJob;
+						}
+					String why;
+					
+					if(ongoingJob) {
+						reply.setContent("busy");
+						why = "I was busy";
+					}
+					else {
+						reply.setContent("notbusy");
+						why = "the cost of doing it was too high";
+					}
+					System.out.println("I'm " + myAgent.getLocalName() + " and I sent a reject to the fixed price task - "
+							+ msg.getContent() + " because " + why);
 				}
 				send(reply);
 			} else {
@@ -569,8 +590,25 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				else{
 					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 					reply.setConversationId(reply.getConversationId());
-					System.out.println("I'm " + myAgent.getLocalName()
-					+ " and I sent a reject to the fixed price task - " + msg.getContent());
+
+					boolean ongoingJob = false;
+					for (int i = 0; i < Main.workerList.size(); i++)
+						if (Main.workerList.get(i).getAID() == myAgent.getAID()) {
+							ongoingJob = Main.workerList.get(i).ongoingJob;
+						}
+					String why;
+					
+					if(ongoingJob) {
+						reply.setContent("busy");
+						why = "I was busy";
+					}
+					else {
+						reply.setContent("notbusy");
+						why = "the cost of doing it was too high";
+					}
+					System.out.println("I'm " + myAgent.getLocalName() + " and I sent a reject to the fixed price task - "
+							+ msg.getContent() + " because " + why);
+
 				}
 				send(reply);
 			} else {
@@ -616,6 +654,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private static final long serialVersionUID = 1L;
 		private int numOfResponses = 0;
 		private int numAccepted = 0;
+		private int numBusy = 0;
 		private int step;
 		private int price;
 		String request;
@@ -669,6 +708,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					if (reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
 						System.out.println("Received a reject task from agent " + reply.getSender()
 						+ ", he ins't going to do the task");
+						if(reply.getContent() == "busy")
+							numBusy++;
+							
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -677,6 +719,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							System.out.println("Everyone rejected the task");
 						} else {
 							// We received all replies
+							int numRejectedNotBusy = numOfResponses - (numAccepted + numBusy);
+							probOfSuccess = probOfSuccess * (1 + numRejectedNotBusy/(numOfResponses - numBusy));
 							System.out.println("Got an accept, waiting for task done inform...");
 							step = 2;
 							mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
@@ -720,6 +764,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private static final long serialVersionUID = 1L;
 		private int numOfResponses;
 		private int bestPrice;
+		private int numProposes = 0;
+		private int numBusy = 0;
 		private jade.core.AID winnerWorker;
 		private ArrayList<jade.core.AID> rejectedAgents;
 		private int step;
@@ -791,6 +837,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							winnerWorker = reply.getSender();
 						} else
 							rejectedAgents.add(reply.getSender());
+						numProposes++;
+					}
+					else if(reply.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
+						if(reply.getContent() == "busy")
+							numBusy++;
 					}
 					numOfResponses++;
 					if (numOfResponses >= agents.length - 1) {
@@ -800,8 +851,19 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						} else {
 							// We received all replies
 							step = 2;
-							System.out.println(
-									"The agent " + winnerWorker.getLocalName() + " won with the value " + bestPrice);
+							int numRejectedNotBusy = numOfResponses - (numProposes + numBusy);
+							if(numRejectedNotBusy == 0)
+								probOfSuccess = 10/3 * Math.log(probOfSuccess + 1);
+							else if(numRejectedNotBusy >= numProposes) {
+								probOfSuccess = probOfSuccess / (numOfResponses / numRejectedNotBusy);
+							}
+							else {
+								probOfSuccess = probOfSuccess / (numProposes / numOfResponses);
+							}
+							
+							System.out.println(probOfSuccess);
+							System.out
+							.println("The agent " + winnerWorker.getLocalName() + " won with the value " + bestPrice);
 						}
 					}
 				} else {
@@ -814,7 +876,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				System.out.println("Step2 - Sending confirmation");
 				ACLMessage confirmation = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 				confirmation.addReceiver(winnerWorker);
-				confirmation.setContent("Ganhaste mano");
+				confirmation.setContent("You won the bid");
 				confirmation.setConversationId(request);
 				confirmation.setReplyWith("confirmation" + System.currentTimeMillis());
 				send(confirmation);
@@ -840,7 +902,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				if (reply != null) {
 					if (reply.getPerformative() == ACLMessage.INFORM) {
 						// Task done
-						System.out.println("Task done!");
+
+						System.out.println("The task I made is done!");
 						step = 4;
 					} else {
 						// Task failed
