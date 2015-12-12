@@ -12,6 +12,8 @@ import product.Product.ProSpecs;
 import sajas.core.Runtime;
 import sajas.sim.repast3.Repast3Launcher;
 import sajas.wrapper.ContainerController;
+import uchicago.src.sim.analysis.OpenSequenceGraph;
+import uchicago.src.sim.analysis.Sequence;
 import uchicago.src.sim.engine.SimInit;
 import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.Object2DDisplay;
@@ -44,7 +46,8 @@ public class Main extends Repast3Launcher {
 	ArrayList<Object> drawList;
 	public static ArrayList<Worker> workerList;
 	public static ArrayList<Local> locals;
-
+	ArrayList<OpenSequenceGraph> graphs;
+	
 	public static void main(String[] args) {
 		SimInit init = new SimInit();
 		init.setNumRuns(10); // works only in batch mode
@@ -123,9 +126,39 @@ public class Main extends Repast3Launcher {
 			registerDisplaySurface("T&T", dsurf);
 			buildDisplay();
 			buildModel();
+			buildGraphics();
+			
 		}
 	}
 
+	private void buildGraphics(){
+		 
+		graphs=new ArrayList<>();
+		OpenSequenceGraph graph = new OpenSequenceGraph("Agent Stats.", this);
+
+		graph.setXRange(0, 50);
+		graph.setYRange(-50, 50);
+		graph.setAxisTitles("time", "money");
+
+		class AverageAge implements Sequence {
+		  public double getSValue() {
+		    double totalMoney = 0;
+		    for (int i = 0; i < workerList.size(); i++) {
+		      Worker a = workerList.get(i);
+		      totalMoney += a.getMoney();
+		    }
+		    
+		    return totalMoney / workerList.size();
+		  }
+		}
+
+		graph.addSequence("Avg. Money", new AverageAge());
+		
+		graph.display();
+
+		graphs.add(graph);
+	}
+	
 	private void buildDisplay() {
 		drawList = new ArrayList<Object>();
 		drawList.add(wall);
@@ -142,6 +175,9 @@ public class Main extends Repast3Launcher {
 
 	public void step() {
 		dsurf.updateDisplay();
+		for (OpenSequenceGraph graph : graphs) {
+			graph.step();
+		}
 	}
 
 	private void buildModel() {

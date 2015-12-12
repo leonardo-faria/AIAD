@@ -1016,6 +1016,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		tools = new ArrayList<>();
 		probOfSuccess = 0.5;
 		prevDistance = 0;
+		credits=5000;
 	}
 
 	protected void setup() {
@@ -1102,6 +1103,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		this.pos.setY(y);
 	}
 
+	public int getMoney(){
+		return credits;
+	}
+	
 	public Pair<Pair<LinkedList<Coord>, Coord>, Integer> makeRoute(Coord start, Coord goal) {
 		return makeRoute(start, goal, charge);
 	}
