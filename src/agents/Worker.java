@@ -10,6 +10,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 
 import javafx.util.Pair;
 import locals.Local;
@@ -66,6 +67,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	Coord pos;
 	Object2DGrid space;
 
+	public ArrayList<String> getTools() {
+		return tools;
+	}
+
+	public void setTools(ArrayList<String> tools) {
+		this.tools = tools;
+	}
+	
 	public Job parseJob(ACLMessage msg, jade.core.AID aid) {
 		Job proposed = null;
 		Local l = null;
@@ -1091,6 +1100,48 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		pastJobs.put(jobTypes.TRANSPORT_TASK, new ArrayList<Integer>());
 		pastJobs.put(jobTypes.AQUISITION_TASK, new ArrayList<Integer>());
 	}
+	
+	private void generateRandomTasks() {
+		Random r = new Random();
+		Behaviour random = null;
+		int taskTypeR = r.nextInt(4 - 1 + 1);
+		String taskTypeS = Integer.toString(taskTypeR);
+		taskTypeS = "1";
+		switch (taskTypeS) {
+		case ASSEMBLY_TASK:
+			//generating tools needed
+			String toolsNeeded = "";
+			ArrayList<String> toolsTemp = new ArrayList<String>();
+			toolsTemp.addAll(Main.tools);
+			int nTools = 1 + r.nextInt(toolsTemp.size() + 1);
+			System.out.println("N tools: " + nTools);
+			for (int i = 0; i < nTools; i++) {
+				int index = r.nextInt(toolsTemp.size());
+				if (i != nTools - 1)
+					toolsNeeded += toolsTemp.get(index) + "-";
+				else
+					toolsNeeded += toolsTemp.get(index);
+				toolsTemp.remove(index);
+			}
+			System.out.println("Tools needed: " + toolsNeeded);
+
+			//generating local
+			ArrayList<Local> localTemp = new ArrayList<Local>();
+			localTemp.addAll(Main.locals);
+			int localSize = localTemp.size();
+			int index = r.nextInt(localSize);
+			String specs = toolsNeeded + " " + localTemp.get(index).getName();
+			random = new RequestTask(taskTypeS, specs, 2000, 0);
+			break;
+		case AQUISITION_TASK:
+			break;
+		case TRANSPORT_TASK:
+			break;
+		default:
+			break;
+		}
+		//addBehaviour(random);
+	}
 
 	protected void setup() {
 		DFAgentDescription dfd = new DFAgentDescription();
@@ -1111,7 +1162,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		// cria behaviours
 
 		if (getLocalName().equals("Agente1")) {
-			if(pastJobs.get(jobTypes.ASSEMBLY_TASK).size() >= 3){
+			/*if(pastJobs.get(jobTypes.ASSEMBLY_TASK).size() >= 3){
 				ArrayList<Integer> cpy = pastJobs.get(jobTypes.ASSEMBLY_TASK);
 				double averageValue = 0;
 				for(int i = 0; i < cpy.size();i++){
@@ -1119,11 +1170,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 				averageValue /= cpy.size();
 				addBehaviour(new RequestTaskFixedPrice("1", "1-4-3 Warehouse1", (int) averageValue));
-			}
+			}*/
 
 			//addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
 			// addBehaviour(new RequestTask("1", "1-3 Warehouse2", 1300,0));
-			addBehaviour(new RequestTaskFixedPrice("3", "1-4-3 Warehouse1 Warehouse2", 0));
+			//addBehaviour(new RequestTaskFixedPrice("3", "1-4-3 Warehouse1 Warehouse2", 0));
+			generateRandomTasks();
+			
 		}
 
 		addBehaviour(new RespondToFixedTask());

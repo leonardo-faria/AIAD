@@ -4,6 +4,8 @@ import jade.core.Profile;
 import jade.core.ProfileImpl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import locals.Local;
 import locals.Warehouse;
@@ -46,6 +48,7 @@ public class Main extends Repast3Launcher {
 	ArrayList<Object> drawList;
 	public static ArrayList<Worker> workerList;
 	public static ArrayList<Local> locals;
+	public static ArrayList<String> tools;
 	ArrayList<OpenSequenceGraph> graphs;
 	
 	public static void main(String[] args) {
@@ -67,6 +70,13 @@ public class Main extends Repast3Launcher {
 			car2 = new CarAgent(new Coord(2, 5), space);
 			drone = new DroneAgent(new Coord(4, 5), space);
 			truck = new TruckAgent(new Coord(3, 5), space);
+			Set<String> toolsT = new HashSet<String>();
+			tools = new ArrayList<String>();
+			toolsT.addAll(car1.getTools());
+			toolsT.addAll(car2.getTools());
+			toolsT.addAll(drone.getTools());
+			toolsT.addAll(truck.getTools());
+			tools.addAll(toolsT);
 			workerList.add(car1);
 			workerList.add(car2);
 			workerList.add(drone);
@@ -89,9 +99,6 @@ public class Main extends Repast3Launcher {
 			Product p = new Product("p", car1);
 			p.setLocation(locals.get(1));
 			locals.get(0).pickup(p);
-			ArrayList<String> tools = new ArrayList<>();
-			tools.add("1");
-			tools.add("3");
 			// car1.addBehaviour(car1.planAssemble(tools, locals.get(0)));
 		} catch (Exception e) {
 		}
@@ -191,7 +198,7 @@ public class Main extends Repast3Launcher {
 		String[] params = { "worldXSize", "worldYSize" };
 		return params;
 	}
-
+	
 	public int getWorldXSize() {
 		return worldXSize;
 	}
