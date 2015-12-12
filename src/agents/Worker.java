@@ -96,8 +96,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				proposed = planAssemble(tools, l, Integer.parseInt(specs[3]));
 			} else
 				proposed = planAssemble(tools, l, 0);
-			if (proposed != null)
+			if (proposed != null){
 				proposed.maxtime = Integer.parseInt(specs[2]);
+				proposed.payoff = proposed.maxtime;
+			}
 
 			break;
 		case AQUISITION_TASK:
@@ -490,8 +492,20 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				if (i != missingtools.size() - 1)
 					t += "-";
 			}
-			if (!t.equals(""))
-				requestAssemble = new RequestTask(Worker.ASSEMBLY_TASK, t + " " + location.getName(), 0, 0);
+			if (!t.equals("")){
+				if(pastJobs.get(jobTypes.ASSEMBLY_TASK).size() >= 3){
+					ArrayList<Integer> cpy = pastJobs.get(jobTypes.ASSEMBLY_TASK);
+					double averageValue = 0;
+					for(int i = 0; i < cpy.size();i++){
+						averageValue += cpy.get(i);
+					}
+					averageValue /= cpy.size();
+					requestAssemble = new RequestTaskFixedPrice(Worker.ASSEMBLY_TASK, t + " " + location.getName(), (int) averageValue);
+				}
+				else
+					requestAssemble = new RequestTask(Worker.ASSEMBLY_TASK, t + " " + location.getName(), 0, 0);
+
+			}
 		}
 
 		@Override
@@ -547,6 +561,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					int cost = proposedJob.getCost();
 					System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
 					if (cost <= proposedJob.maxtime) {
+						proposedJob.payoff = cost;
 						reply.setPerformative(ACLMessage.PROPOSE);
 						reply.setConversationId(reply.getConversationId());
 						reply.setContent("" + cost);
@@ -1121,9 +1136,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				addBehaviour(new RequestTaskFixedPrice("1", "1-4-3 Warehouse1", (int) averageValue));
 			}
 
-			//addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
+			addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
 			// addBehaviour(new RequestTask("1", "1-3 Warehouse2", 1300,0));
-			addBehaviour(new RequestTaskFixedPrice("3", "1-4-3 Warehouse1 Warehouse2", 0));
+			//addBehaviour(new RequestTaskFixedPrice("3", "1-4-3 Warehouse1 Warehouse2", 0));
 		}
 
 		addBehaviour(new RespondToFixedTask());
@@ -1189,8 +1204,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 	public int getMoney(){
 		return credits;
 	}
+
 	public double getProbOfSuccess(){
 		return probOfSuccess;
+
 	}
 	public Pair<Pair<LinkedList<Coord>, Coord>, Integer> makeRoute(Coord start, Coord goal) {
 		return makeRoute(start, goal, charge);
