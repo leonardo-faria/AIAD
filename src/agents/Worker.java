@@ -759,14 +759,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							int numRejectedNotBusy = numOfResponses
 									- (numAccepted + numBusy);
 
-							float rejectPercent = numRejectedNotBusy
-									/ (numAccepted + numBusy);
-							if (rejectPercent < 0.5) {
-								probOfSuccess += (1 - rejectPercent)
-										* LEARNING_RATE * (1 - probOfSuccess);
-							} else
-								probOfSuccess -= rejectPercent * LEARNING_RATE
-								* (1 - probOfSuccess);
+              float rejectPercent = numRejectedNotBusy
+                  / (numAccepted + numBusy);
+              if (rejectPercent < 0.5) {
+                probOfSuccess += (1 - rejectPercent)
+                    * LEARNING_RATE * (1 - probOfSuccess);
+              } else
+                probOfSuccess -= (1 - rejectPercent)
+                	* LEARNING_RATE * (1 - probOfSuccess);
 
 							System.out.println("\n" + probOfSuccess + "\n");
 							System.out
@@ -915,36 +915,36 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							int numRejectedNotBusy = numOfResponses
 									- (numProposes + numBusy);
 
-							float rejectPercent = numRejectedNotBusy
-									/ (numProposes + numBusy);
-							if (rejectPercent < 0.5) {
-								probOfSuccess += (1 - rejectPercent)
-										* LEARNING_RATE * (1 - probOfSuccess);
-							} else
-								probOfSuccess -= rejectPercent * LEARNING_RATE
-								* (1 - probOfSuccess);
-							System.out.println("\n" + probOfSuccess + "\n");
-							System.out.println("The agent "
-									+ winnerWorker.getLocalName()
-									+ " won with the value " + bestPrice);
-						}
-					}
-				} else {
-					block();
-				}
-				break;
-			case 2:
-				// Send the confirmation to the worker that won the bid and
-				// rejections to all the rest
-				System.out.println("Step2 - Sending confirmation");
-				ACLMessage confirmation = new ACLMessage(
-						ACLMessage.ACCEPT_PROPOSAL);
-				confirmation.addReceiver(winnerWorker);
-				confirmation.setContent("You won the bid");
-				confirmation.setConversationId(request);
-				confirmation.setReplyWith("confirmation"
-						+ System.currentTimeMillis());
-				send(confirmation);
+              float rejectPercent = numRejectedNotBusy
+                  / (numProposes + numBusy);
+              if (rejectPercent < 0.5) {
+                  probOfSuccess += (1 - rejectPercent)
+                      * LEARNING_RATE * (1 - probOfSuccess);
+                } else
+                  probOfSuccess -= (1 - rejectPercent)
+                  	* LEARNING_RATE * (1 - probOfSuccess);
+              System.out.println("\n" + probOfSuccess + "\n");
+              System.out.println("The agent "
+                  + winnerWorker.getLocalName()
+                  + " won with the value " + bestPrice);
+            }
+          }
+        } else {
+          block();
+        }
+        break;
+      case 2:
+        // Send the confirmation to the worker that won the bid and
+        // rejections to all the rest
+        System.out.println("Step2 - Sending confirmation");
+        ACLMessage confirmation = new ACLMessage(
+            ACLMessage.ACCEPT_PROPOSAL);
+        confirmation.addReceiver(winnerWorker);
+        confirmation.setContent("You won the bid");
+        confirmation.setConversationId(request);
+        confirmation.setReplyWith("confirmation"
+            + System.currentTimeMillis());
+        send(confirmation);
 
 				ACLMessage rejection = new ACLMessage(
 						ACLMessage.REJECT_PROPOSAL);
