@@ -109,8 +109,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 			}
 			proposed = planAquisition(specs[0], l);
-			if (proposed != null)
+			if (proposed != null){
 				proposed.maxtime = Integer.parseInt(specs[2]);
+				proposed.payoff = proposed.maxtime;
+			}
 			break;
 		case TRANSPORT_TASK:
 			Product p = null;
@@ -124,8 +126,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 			}
 			proposed = planTransport(p, l);
-			if (proposed != null)
+			if (proposed != null){
 				proposed.maxtime = Integer.parseInt(specs[3]);
+				proposed.payoff = proposed.maxtime;
+			}
 			break;
 
 		default:
@@ -230,8 +234,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			done = true;
 			jobFailed = true;
 		}
-		
-		
+
+
 		@Override
 		public void action() {
 			if (tasks.get(tasks.size() - 1).done()) {
@@ -584,49 +588,57 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+			MessageTemplate temp = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
+					MessageTemplate.MatchPerformative(ACLMessage.CANCEL));
+			MessageTemplate mt = MessageTemplate.and(temp,
 					MessageTemplate.not(MessageTemplate.MatchContent("done")));
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
-				// Verificar se vale a pena fazer ou não, se fizer mandar
-				// accept, se não mandar reject
-				ACLMessage reply = msg.createReply();
-				// criar job
-				proposedJob = parseJob(msg, myAgent.getAID());
-				if (proposedJob != null && !ongoingJob) {
-					int cost = proposedJob.getCost();
-					System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
-					if (cost <= proposedJob.maxtime) {
-						reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-						reply.setConversationId(reply.getConversationId());
-						System.out.println("I'm " + myAgent.getLocalName()
-						+ " and I sent a confirmation that I'll try to do the fixed price task - "
-						+ msg.getContent());
-						addBehaviour(proposedJob);
+				//ver se e pa cancelar ongoingjob
+				if(msg.getPerformative() == ACLMessage.CANCEL && ongoingJob){
+					proposedJob.cancel();
+				}
+				else if(msg.getPerformative() == ACLMessage.INFORM){
+					// Verificar se vale a pena fazer ou não, se fizer mandar
+					// accept, se não mandar reject
+					ACLMessage reply = msg.createReply();
+					// criar job
+					proposedJob = parseJob(msg, myAgent.getAID());
+					if (proposedJob != null && !ongoingJob) {
+						int cost = proposedJob.getCost();
+						System.out.println("Custo do " + myAgent.getLocalName() + ": " + cost);
+						if (cost <= proposedJob.maxtime) {
+							reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+							reply.setConversationId(reply.getConversationId());
+							System.out.println("I'm " + myAgent.getLocalName()
+							+ " and I sent a confirmation that I'll try to do the fixed price task - "
+							+ msg.getContent());
+							addBehaviour(proposedJob);
+						} else {
+							reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+							reply.setConversationId(reply.getConversationId());
+							System.out.println("I'm " + myAgent.getLocalName()
+							+ " and I sent a reject to the fixed price task - " + msg.getContent());
+						}
 					} else {
 						reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
 						reply.setConversationId(reply.getConversationId());
+
+						String why;
+
+						if (ongoingJob) {
+							reply.setContent("busy");
+							why = "I was busy";
+						} else {
+							reply.setContent("notbusy");
+							why = "the cost of doing it was too high";
+						}
 						System.out.println("I'm " + myAgent.getLocalName()
-						+ " and I sent a reject to the fixed price task - " + msg.getContent());
+						+ " and I sent a reject to the fixed price task - " + msg.getContent() + " because " + why);
+
 					}
-				} else {
-					reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-					reply.setConversationId(reply.getConversationId());
-
-					String why;
-
-					if (ongoingJob) {
-						reply.setContent("busy");
-						why = "I was busy";
-					} else {
-						reply.setContent("notbusy");
-						why = "the cost of doing it was too high";
-					}
-					System.out.println("I'm " + myAgent.getLocalName()
-					+ " and I sent a reject to the fixed price task - " + msg.getContent() + " because " + why);
-
+					send(reply);
 				}
-				send(reply);
 			} else {
 				block();
 			}
@@ -787,7 +799,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						msg = new ACLMessage(ACLMessage.CANCEL);
 						msg.setContent("backoff");
 						for(int i = 0; i < agentsTrying.size();i++){
-							msg.addReceiver(agentsTrying.get(i));
+							if(reply.getSender() != agentsTrying.get(i))
+								msg.addReceiver(agentsTrying.get(i));
 						}
 						send(msg);
 						done = true;
@@ -797,7 +810,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						if(numOfResponses == numAccepted && !agentCompletedTask)
 							step = 3;
 					}
-					
+
 				} else {
 					block();
 				}
@@ -1108,9 +1121,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				addBehaviour(new RequestTaskFixedPrice("1", "1-4-3 Warehouse1", (int) averageValue));
 			}
 
-			addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
+			//addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
 			// addBehaviour(new RequestTask("1", "1-3 Warehouse2", 1300,0));
-			// addBehaviour(new RequestTaskFixedPrice(300));
+			addBehaviour(new RequestTaskFixedPrice("3", "1-4-3 Warehouse1 Warehouse2", 0));
 		}
 
 		addBehaviour(new RespondToFixedTask());
