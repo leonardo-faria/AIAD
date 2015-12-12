@@ -137,7 +137,7 @@ public class Main extends Repast3Launcher {
 		OpenSequenceGraph graph = new OpenSequenceGraph("Agent Stats.", this);
 
 		graph.setXRange(0, 50);
-		graph.setYRange(-50, 50);
+		graph.setYRange(0, 1);
 		graph.setAxisTitles("time", "money");
 
 		class AverageAge implements Sequence {
@@ -145,7 +145,7 @@ public class Main extends Repast3Launcher {
 		    double totalMoney = 0;
 		    for (int i = 0; i < workerList.size(); i++) {
 		      Worker a = workerList.get(i);
-		      totalMoney += a.getMoney();
+		      totalMoney += a.getProbOfSuccess();
 		    }
 		    
 		    return totalMoney / workerList.size();
