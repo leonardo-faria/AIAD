@@ -7,13 +7,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import locals.BatteryChargeCenter;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 import utils.Coord;
 
 public class Wall implements Drawable {
 	public static ArrayList<ArrayList<Integer>> map;
-
+	public static ArrayList<BatteryChargeCenter> batCenter;
 	static <T> ArrayList<ArrayList<T>> transpose(ArrayList<ArrayList<T>> table) {
 		ArrayList<ArrayList<T>> ret = new ArrayList<ArrayList<T>>();
 		final int N = table.get(0).size();
@@ -30,8 +31,9 @@ public class Wall implements Drawable {
 	public Wall(String fileName) {
 
 		String line = null;
+		batCenter=new ArrayList<>();
 		ArrayList<ArrayList<Integer>> temp = new ArrayList<ArrayList<Integer>>();
-
+		
 		try {
 			FileReader fileReader = new FileReader(fileName);
 
@@ -41,6 +43,8 @@ public class Wall implements Drawable {
 				ArrayList<Integer> al = new ArrayList<Integer>();
 				for (int i = 0; i < line.length(); i++) {
 					al.add((int) line.charAt(i) - (int) '0');
+					if( line.charAt(i) == '2')
+						batCenter.add(new BatteryChargeCenter(new Coord(temp.size(), i)));
 				}
 				temp.add(al);
 			}
@@ -63,12 +67,11 @@ public class Wall implements Drawable {
 					g.setDrawingCoordinates(i * g.getCurWidth(), j * g.getCurHeight(), 0);
 					g.drawFastRect(Color.red);
 				}
-				else if (map.get(i).get(j) == 2) {
-					g.setDrawingCoordinates(i * g.getCurWidth(), j * g.getCurHeight(), 0);
-					g.drawFastRect(Color.yellow);
-				}
-
 			}
+		}
+		for (int i = 0; i < batCenter.size(); i++) {
+			g.setDrawingCoordinates(batCenter.get(i).getPos().getY() * g.getCurWidth(), batCenter.get(i).getPos().getX() * g.getCurHeight(), 0);
+			g.drawFastRect(Color.yellow);
 		}
 	}
 
