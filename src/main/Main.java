@@ -69,9 +69,9 @@ public class Main extends Repast3Launcher {
       workerList.add(drone);
       workerList.add(truck);
       agentContainer.acceptNewAgent("Agente2", car1).start();
-      agentContainer.acceptNewAgent("Agente3", drone).start();
+      agentContainer.acceptNewAgent("Agente3", car2).start();
       agentContainer.acceptNewAgent("Agente4", truck).start();
-      agentContainer.acceptNewAgent("Agente1", car2).start();
+      agentContainer.acceptNewAgent("Agente1", drone).start();
 
       scheduleAgent(car1);
       scheduleAgent(car2);
