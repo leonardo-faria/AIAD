@@ -12,6 +12,6 @@ public class TruckAgent extends Worker {
 		speed = 5;
 		maxload = 1000;
 		tools.add("2");
-		tools.add("3");
+		tools.add("4");
 	}	
 }
