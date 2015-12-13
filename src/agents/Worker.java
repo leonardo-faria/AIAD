@@ -169,7 +169,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						.get(i)) / searchTool(null))));
 			}
 		}
-		return distance * speed + estimatedTime;
+//		return distance * speed + estimatedTime;
+
+//		return distance * speed;
+		
+		return 1000;
 	}
 
 	public class Buy extends SimpleBehaviour {
@@ -243,8 +247,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 			}
 			provider.prevDistance = distance;
-			return distance * provider.speed + creditsSpent + estimatedTime
-					+ (int) ((1 - probOfSuccess) * fine);
+//			return distance * provider.speed + creditsSpent + estimatedTime
+//					+ (int) ((1 - probOfSuccess) * fine);
+//			return distance *provider.speed + creditsSpent;
+			return 1000;
 		}
 
 		public void cancel() {
@@ -659,7 +665,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				// ver se e pa cancelar ongoingjob
-				if (msg.getPerformative() == ACLMessage.CANCEL && ongoingJob) {
+				if (msg.getPerformative() == ACLMessage.CANCEL && ongoingJob && proposedJob!=null) {
 					proposedJob.cancel();
 				} else if (msg.getPerformative() == ACLMessage.INFORM) {
 					// Verificar se vale a pena fazer ou não, se fizer mandar

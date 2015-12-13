@@ -23,6 +23,7 @@ import uchicago.src.sim.gui.DisplaySurface;
 import uchicago.src.sim.gui.Object2DDisplay;
 import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
+import agents.BikeAgent;
 import agents.CarAgent;
 import agents.DroneAgent;
 import agents.SystemAgent;
@@ -74,14 +75,15 @@ public class Main extends Repast3Launcher {
 			DroneAgent drone3 = new DroneAgent(new Coord(80, 5), space);
 			TruckAgent truck1 = new TruckAgent(new Coord(3, 5), space);
 			TruckAgent truck2 = new TruckAgent(new Coord(5, 76), space);
+			BikeAgent bike = new BikeAgent(new Coord(50, 76), space);
 			
-			
-			sys = new SystemAgent(new Coord(0, 0), space);
+			sys = new SystemAgent(new Coord(0, 0), space); 
 			Set<String> toolsT = new HashSet<String>();
 			tools = new ArrayList<String>();
 			toolsT.addAll(car1.getTools());
 			toolsT.addAll(drone1.getTools());
 			toolsT.addAll(truck1.getTools());
+			toolsT.addAll(bike.getTools());
 			tools.addAll(toolsT);
 			workerList.add(car1);
 			workerList.add(car2);
@@ -90,6 +92,7 @@ public class Main extends Repast3Launcher {
 			workerList.add(drone3);
 			workerList.add(truck1);
 			workerList.add(truck2);
+			workerList.add(bike);
 			locals = new ArrayList<>();
 			locals.add(new Warehouse(new Coord(50, 20), 1));
 			locals.add(new Warehouse(new Coord(40, 40), 2));
@@ -113,6 +116,7 @@ public class Main extends Repast3Launcher {
 			agentContainer.acceptNewAgent("Agente4", truck1).start();
 			agentContainer.acceptNewAgent("Agente6", truck2).start();
 			agentContainer.acceptNewAgent("Agente1", car2).start();
+			agentContainer.acceptNewAgent("Agente8", bike).start();
 			agentContainer.acceptNewAgent("System", sys).start();
 
 			for (Worker w : workerList) {
@@ -163,30 +167,44 @@ public class Main extends Repast3Launcher {
 	private void buildGraphics(){
 		 
 		graphs=new ArrayList<>();
-		OpenSequenceGraph graph = new OpenSequenceGraph("Agent Stats.", this);
-
-		graph.setXRange(0, 50);
-		graph.setYRange(0, 1);
-		graph.setAxisTitles("time", "money");
-
-		class AverageAge implements Sequence {
+		
+		OpenSequenceGraph graph1 = new OpenSequenceGraph("ProbOfSuccess", this);
+		graph1.setXRange(0, 50);
+		graph1.setYRange(0, 1);
+		graph1.setAxisTitles("time", "Avg. ProbOfSuccess");
+		class AverageSuc implements Sequence {
 		  public double getSValue() {
 		    double totalMoney = 0;
 		    for (int i = 0; i < workerList.size(); i++) {
 		      Worker a = workerList.get(i);
 		      totalMoney += a.getProbOfSuccess();
 		    }
-		    
 		    return totalMoney / workerList.size();
-		   // return sys.getProbOfSuccess();
 		  }
 		}
-
-		graph.addSequence("Avg. Money", new AverageAge());
+		graph1.addSequence("Avg. ProbOfSuccess", new AverageSuc());
+		graph1.display();
 		
-		graph.display();
+		OpenSequenceGraph graph2 = new OpenSequenceGraph("Money", this);
+		graph2.setXRange(0, 50);
+		graph2.setYRange(4500, 5000);
+		graph2.setAxisTitles("time", "Avg. Money");
+		class AverageCredits implements Sequence {
+		  public double getSValue() {
+		    double totalMoney = 0;
+		    for (int i = 0; i < workerList.size(); i++) {
+		      Worker a = workerList.get(i);
+		      totalMoney += a.getMoney();
+		    }
+		    return totalMoney / workerList.size();
+		  }
+		}
+		graph2.addSequence("Avg. Money", new AverageCredits());
+		graph2.display();
+		
 
-		graphs.add(graph);
+		graphs.add(graph1);
+		graphs.add(graph2);
 	}
 	
 	private void buildDisplay() {
