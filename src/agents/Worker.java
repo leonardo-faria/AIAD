@@ -15,6 +15,7 @@ import java.util.Random;
 
 import javafx.util.Pair;
 import locals.Local;
+import locals.Wall;
 import main.Main;
 import product.Product;
 import product.Product.ProSpecs;
@@ -1294,7 +1295,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			 */
 
 			// addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
-//			 addBehaviour(new RequestTaskFixedPrice("2", "p Warehouse2", 2000));
+//			 addBehaviour(new RequestTaskFixedPrice("2", "p Warehouse2", 0));
 			// addBehaviour(new RequestTaskFixedPrice("3",
 			// "1-4-3 Warehouse1 Warehouse2", 0));
 //			generateRandomTasks();

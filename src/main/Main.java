@@ -9,6 +9,7 @@ import java.util.Set;
 
 import locals.Local;
 import locals.Store;
+import locals.Wall;
 import locals.Warehouse;
 import product.Product;
 import product.Product.ProSpecs;
@@ -25,7 +26,6 @@ import utils.Coord;
 import agents.CarAgent;
 import agents.DroneAgent;
 import agents.TruckAgent;
-import agents.Wall;
 import agents.Worker;
 
 public class Main extends Repast3Launcher {

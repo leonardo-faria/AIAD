@@ -1,4 +1,4 @@
-package agents;
+package locals;
 
 import java.awt.Color;
 import java.io.BufferedReader;
@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import locals.BatteryChargeCenter;
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 import utils.Coord;
