@@ -1277,7 +1277,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			dfd.addServices(sd);
 		}
 		try {
-			DFService.register(this, dfd);
+			if(!getLocalName().equals("System"))
+				DFService.register(this, dfd);
 		} catch (FIPAException e) {
 			e.printStackTrace();
 		}
@@ -1302,9 +1303,13 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			// System.out.println("acabou");
 
 		}
-
-		addBehaviour(new RespondToFixedTask());
-		addBehaviour(new RespondToTask());
+		if(!getLocalName().equals("System")) {
+			addBehaviour(new RespondToFixedTask());
+			addBehaviour(new RespondToTask());		
+		}
+		else {
+			generateRandomTasks();
+		}
 	}
 
 	private float searchTool(String name) {

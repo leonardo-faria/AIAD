@@ -25,6 +25,7 @@ import uchicago.src.sim.space.Object2DGrid;
 import utils.Coord;
 import agents.CarAgent;
 import agents.DroneAgent;
+import agents.SystemAgent;
 import agents.TruckAgent;
 import agents.Worker;
 
@@ -43,6 +44,7 @@ public class Main extends Repast3Launcher {
 	DroneAgent drone;
 	TruckAgent truck;
 	Wall wall;
+	SystemAgent sys;
 
 	DisplaySurface dsurf;
 	Object2DGrid space;
@@ -72,6 +74,7 @@ public class Main extends Repast3Launcher {
 			car2 = new CarAgent(new Coord(2, 5), space);
 			drone = new DroneAgent(new Coord(4, 5), space);
 			truck = new TruckAgent(new Coord(3, 5), space);
+			sys = new SystemAgent(new Coord(0, 0), space);
 			Set<String> toolsT = new HashSet<String>();
 			tools = new ArrayList<String>();
 			toolsT.addAll(car1.getTools());
@@ -95,11 +98,13 @@ public class Main extends Repast3Launcher {
 			agentContainer.acceptNewAgent("Agente3", drone).start();
 			agentContainer.acceptNewAgent("Agente4", truck).start();
 			agentContainer.acceptNewAgent("Agente1", car2).start();
+			agentContainer.acceptNewAgent("System", sys).start();
 
 			scheduleAgent(car1);
 			scheduleAgent(car2);
 			scheduleAgent(drone);
 			scheduleAgent(truck);
+			scheduleAgent(sys);
 
 			locals.get(0).pickup(p);
 			// car1.addBehaviour(car1.planAssemble(tools, locals.get(0)));
