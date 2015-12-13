@@ -10,6 +10,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 import javafx.util.Pair;
@@ -1191,7 +1192,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		Behaviour random = null;
 		int taskTypeR = r.nextInt(4 - 1 + 1);
 		String taskTypeS = Integer.toString(taskTypeR);
-		taskTypeS = "1";
 		switch (taskTypeS) {
 		case ASSEMBLY_TASK:
 			// generating tools needed
@@ -1221,11 +1221,46 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			random = new RequestTask(taskTypeS, specs, 2000, 0, true);
 			break;
 		case AQUISITION_TASK:
+			System.out.println("Tou na aquisição e não funciono");
+			int nr = r.nextInt(10000);
+			int w = r.nextInt(2500);
+			int p = r.nextInt(3000);
+			int x = r.nextInt();
+			int y = r.nextInt();
+			//não sei se crio um produto novo ou se vou buscar aos que lá tem como tou a fazer no transport
+			Product.getProductTypes().put("Product" + nr, new ProSpecs(w, p, new Coord(50, 50)));
+			ArrayList<String> localTempA = new ArrayList<String>();
+			for(int i = 0; i < Main.locals.size(); i++)
+				localTempA.add(Main.locals.get(i).getName());
+			int localSizeA = localTempA.size();
+			int indexA = r.nextInt(localSizeA);
+			String msg = "Product" + nr + " " + localTempA.get(indexA);
+			//random = mandar fazer aquisition
+			break;
+		case TRANSPORT_TASK:
+			System.out.println("Tou no transporte e ainda não funciono");
+			int indexB = r.nextInt(Product.getProductTypes().size());
+			List<String> keys = new ArrayList<String>(Product.getProductTypes().keySet());
+			String msgT = keys.get(indexB);
+			ArrayList<String> localTempB = new ArrayList<String>();
+			for(int i = 0; i < Main.locals.size(); i++)
+				localTempB.add(Main.locals.get(i).getName());
+			int localSizeB = localTempB.size();
+			int indexB1 = r.nextInt(localSizeB);
+			msgT += " " + localTempB.get(indexB1);
+			localTempB.remove(indexB1);
+			int indexB2 = r.nextInt(localSizeB-1);
+			msgT += " " + localTempB.get(indexB2);
+			System.out.println(msgT);
+			//random = mandar fazer transporte
+			
 			break;
 		default:
 			break;
 		}
-		addBehaviour(random);
+		if(random != null)
+			addBehaviour(random);
+		else generateRandomTasks();
 	}
 
 	protected void setup() {
