@@ -1269,6 +1269,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		int jobtType = r.nextInt(2);
 		System.out.println("job type: " + jobtType);
 		String taskTypeS = Integer.toString(taskTypeR);
+		taskTypeS = ASSEMBLY_TASK;
 		switch (taskTypeS) {
 		case ASSEMBLY_TASK:
 			// generating tools needed
@@ -1305,10 +1306,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			int p = r.nextInt(3000);
 			int x = r.nextInt();
 			int y = r.nextInt();
-			// não sei se crio um produto novo ou se vou buscar aos que lá tem
-			// como tou a fazer no transport
+			int store = r.nextInt(Main.stores.size());
 			Product.getProductTypes().put("Product" + nr,
-					new ProSpecs(w, p, new Coord(50, 50)));
+					new ProSpecs(w, p, Main.stores.get(store).getPos()));
 			ArrayList<String> localTempA = new ArrayList<String>();
 			for (int i = 0; i < Main.locals.size(); i++)
 				localTempA.add(Main.locals.get(i).getName());

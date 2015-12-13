@@ -40,9 +40,6 @@ public class Main extends Repast3Launcher {
 	private int worldXSize = 100;
 	private int worldYSize = 100;
 
-	CarAgent car1, car2;
-	DroneAgent drone;
-	TruckAgent truck;
 	Wall wall;
 	SystemAgent sys;
 
@@ -70,40 +67,57 @@ public class Main extends Repast3Launcher {
 			setWorldXSize(wall.getWidth());
 			workerList = new ArrayList<>();
 			space = new Object2DGrid(worldXSize, worldYSize);
-			car1 = new CarAgent(new Coord(1, 1), space);
-			car2 = new CarAgent(new Coord(2, 5), space);
-			drone = new DroneAgent(new Coord(4, 5), space);
-			truck = new TruckAgent(new Coord(3, 5), space);
+			CarAgent car1 = new CarAgent(new Coord(1, 1), space);
+			CarAgent car2 = new CarAgent(new Coord(2, 5), space);
+			DroneAgent drone1 = new DroneAgent(new Coord(4, 5), space);
+			DroneAgent drone2 = new DroneAgent(new Coord(40, 50), space);
+			DroneAgent drone3 = new DroneAgent(new Coord(80, 5), space);
+			TruckAgent truck1 = new TruckAgent(new Coord(3, 5), space);
+			TruckAgent truck2 = new TruckAgent(new Coord(5, 76), space);
+			
+			
 			sys = new SystemAgent(new Coord(0, 0), space);
 			Set<String> toolsT = new HashSet<String>();
 			tools = new ArrayList<String>();
 			toolsT.addAll(car1.getTools());
-			toolsT.addAll(car2.getTools());
-			toolsT.addAll(drone.getTools());
-			toolsT.addAll(truck.getTools());
+			toolsT.addAll(drone1.getTools());
+			toolsT.addAll(truck1.getTools());
 			tools.addAll(toolsT);
 			workerList.add(car1);
 			workerList.add(car2);
-			workerList.add(drone);
-			workerList.add(truck);
+			workerList.add(drone1);
+			workerList.add(drone2);
+			workerList.add(drone3);
+			workerList.add(truck1);
+			workerList.add(truck2);
 			locals = new ArrayList<>();
 			locals.add(new Warehouse(new Coord(50, 20), 1));
 			locals.add(new Warehouse(new Coord(40, 40), 2));
+			locals.add(new Warehouse(new Coord(60, 4), 3));
+			locals.add(new Warehouse(new Coord(84, 55), 4));
+			locals.add(new Warehouse(new Coord(60, 44), 5));
+			locals.add(new Warehouse(new Coord(30, 4), 6));
+			locals.add(new Warehouse(new Coord(39, 70), 6));
 			stores=new ArrayList<>();
 			stores.add(new Store(new Coord(20, 20)));
+			stores.add(new Store(new Coord(4, 2)));
+			stores.add(new Store(new Coord(20, 60)));
+			stores.add(new Store(new Coord(60, 20)));
 			Product.addType("p", new ProSpecs(0, 0, stores.get(0).getPos()));
 			Product p = new Product("p", car1);
 			p.setLocation(locals.get(1));
 			agentContainer.acceptNewAgent("Agente2", car1).start();
-			agentContainer.acceptNewAgent("Agente3", drone).start();
-			agentContainer.acceptNewAgent("Agente4", truck).start();
+			agentContainer.acceptNewAgent("Agente3", drone1).start();
+			agentContainer.acceptNewAgent("Agente5", drone2).start();
+			agentContainer.acceptNewAgent("Agente7", drone3).start();
+			agentContainer.acceptNewAgent("Agente4", truck1).start();
+			agentContainer.acceptNewAgent("Agente6", truck2).start();
 			agentContainer.acceptNewAgent("Agente1", car2).start();
 			agentContainer.acceptNewAgent("System", sys).start();
 
-			scheduleAgent(car1);
-			scheduleAgent(car2);
-			scheduleAgent(drone);
-			scheduleAgent(truck);
+			for (Worker w : workerList) {
+				scheduleAgent(w);
+			}
 			scheduleAgent(sys);
 
 			locals.get(0).pickup(p);
@@ -164,6 +178,7 @@ public class Main extends Repast3Launcher {
 		    }
 		    
 		    return totalMoney / workerList.size();
+		   // return sys.getProbOfSuccess();
 		  }
 		}
 
