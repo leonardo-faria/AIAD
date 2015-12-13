@@ -866,12 +866,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 
 							float rejectPercent = (float) numRejectedNotBusy
 									/ (float) (numAccepted + numBusy);
-
-							System.out.println(numOfResponses);
+							if(!myAgent.getLocalName().equals("System"))
 							System.out.println(probOfSuccess);
-							System.out.println(numRejectedNotBusy);
-							System.out.println(numBusy);
-							System.out.println(numAccepted);
 
 							if (rejectPercent < 0.5) {
 								probOfSuccess += (1 - rejectPercent)
@@ -879,9 +875,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 							} else
 								probOfSuccess -= (1 - rejectPercent)
 										* LEARNING_RATE * (1 - probOfSuccess);
-
-							System.out.println("\n" + probOfSuccess + "\n"
-									+ rejectPercent + "\n");
+							if(!myAgent.getLocalName().equals("System"))
+							System.out.println(probOfSuccess);
 							System.out
 									.println("Got an accept, waiting for task done inform...");
 							numOfResponses = 0;
@@ -1077,21 +1072,17 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 									- (numProposes + numBusy);
 
 							float rejectPercent = (float) numRejectedNotBusy
-									/ (float) (numRejectedNotBusy + numBusy);
-							System.out.println(numOfResponses);
-							System.out.println(probOfSuccess);
-							System.out.println(numRejectedNotBusy);
-							System.out.println(numBusy);
-							System.out.println(numProposes);
-							System.out.println(rejectPercent);
+									/ (float) (numProposes + numBusy);
+							if(!myAgent.getLocalName().equals("System"))
+								System.out.println(probOfSuccess);
 							if (rejectPercent < 0.5) {
 								probOfSuccess += (1 - rejectPercent)
 										* LEARNING_RATE * (1 - probOfSuccess);
 							} else
 								probOfSuccess -= (1 - rejectPercent)
 										* LEARNING_RATE * (1 - probOfSuccess);
-							System.out.println("\n" + probOfSuccess + "\n"
-									+ rejectPercent + "\n");
+							if(!myAgent.getLocalName().equals("System"))
+							System.out.println(probOfSuccess);
 							System.out.println("The agent "
 									+ winnerWorker.getLocalName()
 									+ " won with the value " + bestPrice);
