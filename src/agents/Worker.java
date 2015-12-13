@@ -169,11 +169,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 						.get(i)) / searchTool(null))));
 			}
 		}
-//		return distance * speed + estimatedTime;
+		return distance * speed + estimatedTime;
 
 //		return distance * speed;
 		
-		return 1000;
+	//	return 1000;
 	}
 
 	public class Buy extends SimpleBehaviour {
@@ -247,10 +247,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 				}
 			}
 			provider.prevDistance = distance;
-//			return distance * provider.speed + creditsSpent + estimatedTime
-//					+ (int) ((1 - probOfSuccess) * fine);
+			return distance * provider.speed + creditsSpent + estimatedTime
+					+ (int) ((1 - probOfSuccess) * fine);
 //			return distance *provider.speed + creditsSpent;
-			return 1000;
+//			return 1000;
 		}
 
 		public void cancel() {
@@ -1266,7 +1266,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		int jobtType = r.nextInt(2);
 		System.out.println("job type: " + jobtType);
 		String taskTypeS = Integer.toString(taskTypeR);
-		taskTypeS = ASSEMBLY_TASK;
 		switch (taskTypeS) {
 		case ASSEMBLY_TASK:
 			// generating tools needed
@@ -1363,25 +1362,6 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		}
 
 		// cria behaviours
-
-		if (getLocalName().equals("Agente1")) {
-			/*
-			 * if(pastJobs.get(jobTypes.ASSEMBLY_TASK).size() >= 3){
-			 * ArrayList<Integer> cpy = pastJobs.get(jobTypes.ASSEMBLY_TASK);
-			 * double averageValue = 0; for(int i = 0; i < cpy.size();i++){
-			 * averageValue += cpy.get(i); } averageValue /= cpy.size();
-			 * addBehaviour(new RequestTaskFixedPrice("1", "1-4-3 Warehouse1",
-			 * (int) averageValue)); }
-			 */
-
-			// addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
-			// addBehaviour(new RequestTaskFixedPrice("2", "p Warehouse2", 0));
-			// addBehaviour(new RequestTaskFixedPrice("3",
-			// "1-4-3 Warehouse1 Warehouse2", 0));
-			// generateRandomTasks();
-			// System.out.println("acabou");
-
-		}
 		if (!getLocalName().equals("System")) {
 			addBehaviour(new RespondToFixedTask());
 			addBehaviour(new RespondToTask());
