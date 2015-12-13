@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import locals.Local;
+import locals.Store;
 import locals.Warehouse;
 import product.Product;
 import product.Product.ProSpecs;
@@ -48,6 +49,7 @@ public class Main extends Repast3Launcher {
 	ArrayList<Object> drawList;
 	public static ArrayList<Worker> workerList;
 	public static ArrayList<Local> locals;
+	public static ArrayList<Store> stores;
 	public static ArrayList<String> tools;
 	ArrayList<OpenSequenceGraph> graphs;
 	
@@ -84,7 +86,9 @@ public class Main extends Repast3Launcher {
 			locals = new ArrayList<>();
 			locals.add(new Warehouse(new Coord(50, 20), 1));
 			locals.add(new Warehouse(new Coord(40, 40), 2));
-			Product.addType("p", new ProSpecs(0, 0, new Coord(20, 20)));
+			stores=new ArrayList<>();
+			stores.add(new Store(new Coord(20, 20)));
+			Product.addType("p", new ProSpecs(0, 0, stores.get(0).getPos()));
 			Product p = new Product("p", car1);
 			p.setLocation(locals.get(1));
 			agentContainer.acceptNewAgent("Agente2", car1).start();
@@ -169,6 +173,7 @@ public class Main extends Repast3Launcher {
 		drawList = new ArrayList<Object>();
 		drawList.add(wall);
 		drawList.addAll(locals);
+		drawList.addAll(stores);
 		Object2DDisplay agentDisplay = new Object2DDisplay(space);
 		agentDisplay.setObjectList(drawList);
 

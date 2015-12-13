@@ -1294,10 +1294,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			 */
 
 			// addBehaviour(new RequestTask("1", "1-4-3 Warehouse1", 0, 0));
-			// addBehaviour(new RequestTask("1", "1-3 Warehouse2", 1300,0));
+//			 addBehaviour(new RequestTaskFixedPrice("2", "p Warehouse2", 2000));
 			// addBehaviour(new RequestTaskFixedPrice("3",
 			// "1-4-3 Warehouse1 Warehouse2", 0));
-			generateRandomTasks();
+//			generateRandomTasks();
 			// System.out.println("acabou");
 
 		}
