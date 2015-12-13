@@ -512,7 +512,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 					}
 					averageValue /= cpy.size();
 					requestAssemble = new RequestTaskFixedPrice(Worker.ASSEMBLY_TASK, t + " " + location.getName(),
-							(int) averageValue);
+							(int) averageValue, false);
 				} else
 					requestAssemble = new RequestTask(Worker.ASSEMBLY_TASK, t + " " + location.getName(), 0, 0, false);
 
@@ -723,8 +723,9 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		private String specs;
 		boolean failed, agentCompletedTask;
 		private ArrayList<jade.core.AID> agentsTrying;
+		private boolean systemTask;
 
-		public RequestTaskFixedPrice(String type, String specs, int price) {
+		public RequestTaskFixedPrice(String type, String specs, int price, boolean systemTask) {
 			this.price = price;
 			request = "fixed-" + type;
 			this.specs = specs;
@@ -732,6 +733,7 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			failed = false;
 			agentCompletedTask = false;
 			agentsTrying = new ArrayList<jade.core.AID>();
+			this.systemTask = systemTask;
 		}
 
 		@Override
@@ -860,6 +862,14 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		@Override
 		public boolean done() {
 			return done;
+		}
+		
+		@Override
+		public int onEnd() {
+			if (systemTask) {
+				generateRandomTasks();
+			}
+			return 0;
 		}
 
 	}
@@ -1137,6 +1147,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 		Random r = new Random();
 		Behaviour random = null;
 		int taskTypeR = r.nextInt(4 - 1 + 1);
+		int jobtType = r.nextInt(2);
+		System.out.println("job type: " + jobtType);
 		String taskTypeS = Integer.toString(taskTypeR);
 		switch (taskTypeS) {
 		case ASSEMBLY_TASK:
@@ -1163,11 +1175,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			int localSize = localTemp.size();
 			int index = r.nextInt(localSize);
 			String specs = toolsNeeded + " " + localTemp.get(index);
-			System.out.println(specs);
-			random = new RequestTask(taskTypeS, specs, 2000, 0, true);
+			if(jobtType == 0)
+				random = new RequestTask(taskTypeS, specs, 2000, 0, true);
+			else random = new RequestTaskFixedPrice(taskTypeS, specs, 2000, true);
 			break;
 		case AQUISITION_TASK:
-			System.out.println("Tou na aquisição e não funciono");
 			int nr = r.nextInt(10000);
 			int w = r.nextInt(2500);
 			int p = r.nextInt(3000);
@@ -1182,10 +1194,11 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			int localSizeA = localTempA.size();
 			int indexA = r.nextInt(localSizeA);
 			String msg = "Product" + nr + " " + localTempA.get(indexA);
-			// random = mandar fazer aquisition
+			if(jobtType == 0)
+				random = new RequestTask(taskTypeS, msg, 2000, 0, true);
+			else random = new RequestTaskFixedPrice(taskTypeS, msg, 2000, true);
 			break;
 		case TRANSPORT_TASK:
-			System.out.println("Tou no transporte e ainda não funciono");
 			int indexB = r.nextInt(Product.getProductTypes().size());
 			List<String> keys = new ArrayList<String>(Product.getProductTypes().keySet());
 			String msgT = keys.get(indexB);
@@ -1198,9 +1211,10 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			localTempB.remove(indexB1);
 			int indexB2 = r.nextInt(localSizeB - 1);
 			msgT += " " + localTempB.get(indexB2);
-			System.out.println(msgT);
-			// random = mandar fazer transporte
-
+			if(jobtType == 0)
+				random = new RequestTask(taskTypeS, msgT, 2000, 0, true);
+			else
+				random = new RequestTaskFixedPrice(taskTypeS, msgT, 2000, true);
 			break;
 		default:
 			break;
