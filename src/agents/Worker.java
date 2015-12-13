@@ -259,6 +259,8 @@ public abstract class Worker extends Agent implements Drawable, Holder {
 			}
 			if (done) {
 				// cancel current job
+				if(tasks.get(step-1) instanceof Move)
+					((Move) tasks.get(step-1)).stop();
 				return;
 			}
 			if (!started) {

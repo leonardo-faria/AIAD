@@ -168,7 +168,7 @@ public class Main extends Repast3Launcher {
 	private void buildDisplay() {
 		drawList = new ArrayList<Object>();
 		drawList.add(wall);
-
+		drawList.addAll(locals);
 		Object2DDisplay agentDisplay = new Object2DDisplay(space);
 		agentDisplay.setObjectList(drawList);
 
